@@ -10,7 +10,7 @@
 #define MAX_CLK 17
 #define MAX_CS 15
 #define MAX_DATA 16
-#define MAX2_CS 3
+#define MAX2_CS 4
 
 // the Proportional control constant
 #define Kp  10
@@ -22,7 +22,8 @@
 // Windup error prevention, 5% by default
 #define WINDUPPERCENT 0.05  
 
-MAX6675 thermocouple(MAX_CLK, MAX_CS, MAX_DATA);
+MAX6675 thermocouple(MAX_CLK, MAX2_CS, MAX_DATA);
+MAX6675 thermocouple2(MAX_CLK, MAX_CS, MAX_DATA);
 
 // Classic 16x2 LCD used
 // LiquidCrystal display with:
@@ -50,7 +51,8 @@ Encoder myEnc(19,2);
 // otherwise the optimization code will ignore the interrupt
 
 volatile long seconds_time = 0;  // this will get incremented once a second
-volatile float the_temperature;  // in celsius
+volatile float temp1;  // in celsius
+volatile float temp2;  // in celsius
 volatile float previous_temperature;  // the last reading (1 second ago)
 
 // the current temperature
@@ -78,10 +80,6 @@ void setup() {
   // ...and turn it off to start!
   pinMode(RELAYPIN, LOW);
 
-  //disable 2nd TC chip
-  pinMode(MAX2_CS, OUTPUT);
-  pinMode(MAX2_CS, LOW);
-  
   // Set up 16x2 standard LCD  
   lcd.begin(16,2);
 
@@ -121,8 +119,8 @@ void loop() {
   float Slope; // the change per second of the error
  
   
-  Error = target_temperature - the_temperature;
-  Slope = previous_temperature - the_temperature;
+  Error = target_temperature - temp1;
+  Slope = previous_temperature - temp1;
   // Summation is done in the interrupt
   
   // proportional-derivative controller only
@@ -157,19 +155,20 @@ SIGNAL(TIMER1_COMPA_vect) {
   seconds_time++;
 
   // save the last reading for our slope calculation
-  previous_temperature = the_temperature;
+  previous_temperature = temp1;
 
   // we will want to know the temperature in the main loop()
   // instead of constantly reading it, we'll just use this interrupt
-  // to track it and save it once a second to 'the_temperature'
-  the_temperature = thermocouple.readCelsius();
-//  the_temperature = thermocouple.readFarenheit();
+  // to track it and save it once a second to 'temp1'
+  temp1 = thermocouple.readCelsius();
+  temp2 = thermocouple2.readCelsius();
+//  temp1 = thermocouple.readFarenheit();
   
   // Sum the error over time
-  Summation += target_temperature - the_temperature;
+  Summation += target_temperature - temp1;
   
-  if ( (the_temperature < (target_temperature * (1.0 - WINDUPPERCENT))) ||
-       (the_temperature > (target_temperature * (1.0 + WINDUPPERCENT))) ) {
+  if ( (temp1 < (target_temperature * (1.0 - WINDUPPERCENT))) ||
+       (temp1 > (target_temperature * (1.0 + WINDUPPERCENT))) ) {
         // to avoid windup, we only integrate within 5%
          Summation = 0;
    }
@@ -185,7 +184,9 @@ SIGNAL(TIMER1_COMPA_vect) {
 
   // go to line #1
   lcd.setCursor(0,1);
-  lcd.print(the_temperature);
+  lcd.print(temp1);
+  lcd.setCursor(8,1);
+  lcd.print(temp2);
 #if ARDUINO >= 100
   lcd.write(0xDF);
 #else
@@ -196,17 +197,17 @@ SIGNAL(TIMER1_COMPA_vect) {
   // print out a log so we can see whats up
   Serial.print(seconds_time);
   Serial.print("\t");
-  Serial.print(the_temperature);
+  Serial.print(temp1);
   Serial.print("\t");
   Serial.print(target_temperature);
   Serial.print("\t");
-  Serial.print(target_temperature - the_temperature); // the Error!
+  Serial.print(target_temperature - temp1); // the Error!
   Serial.print("\t");
-  Serial.print(previous_temperature - the_temperature); // the Slope of the Error
+  Serial.print(previous_temperature - temp1); // the Slope of the Error
   Serial.print("\t");
   Serial.print(Summation); // the Integral of Error
   Serial.print("\t");
-  Serial.print(Kp*(target_temperature - the_temperature) + Ki*Summation + Kd*(previous_temperature - the_temperature)); //  controller output
+  Serial.print(Kp*(target_temperature - temp1) + Ki*Summation + Kd*(previous_temperature - temp1)); //  controller output
   Serial.print("\t");
   Serial.println(relay_state);
 } 
