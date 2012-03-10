@@ -14,6 +14,9 @@ I chose this library because it allows use of 0,1 or 2 interupt pins for maximum
 The MAX6675 library is also taken from adafruit's github
 https://github.com/adafruit/MAX6675-library
 
+The RESET function was taken directly from the following website:
+http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1222941939/12
+
 The rest are standard Arduino 1.0 librarys.
 -----------------------------------------------------------------------------
 **** HARDWARE ****

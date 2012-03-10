@@ -28,6 +28,7 @@ the input for the second TC and Pin 6 is the CS and wired to DP4.
 #include <max6675.h>
 #include <Wire.h>
 #include <Encoder.h>
+#include <avr/wdt.h> //watchdog timer needed for the RESET function
 
 // The pin we use to control the SSR
 #define SSRPIN 13
@@ -86,6 +87,22 @@ float Summation;        // The integral of error since time = 0
 
 int relay_state;        // whether the relay pin is high (on) or low (off)
 
+int menu = 0;
+
+volatile  long buttonTime = 0; // how long the encoder button has been pressed
+volatile  int lastButtonState = HIGH; // if the button is pressed or not
+volatile  int buttonState = HIGH; // current button state
+
+#define soft_reset()        \
+do                          \
+{                           \
+    wdt_enable(WDTO_15MS);  \
+    for(;;)                 \
+    {                       \
+    }                       \
+} while(0)
+
+void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3")));
 
 
 void setup() {  
@@ -135,6 +152,9 @@ void setup() {
   TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS12);    // CTC & clock div 1024
   OCR1A = 15609;                                 // 16mhz / 1024 / 15609 = 1 Hz
   TIMSK1 = _BV(OCIE1A);                          // turn on interrupt
+
+
+
 }
 
  
@@ -142,9 +162,6 @@ void loop() {
 
   // we moved the LCD code into the interrupt so we don't have to worry about updating the LCD 
   // or reading from the airTC in the main loop
-
-  long buttonTime; // how long the encoder button has been pressed
-  int lastButtonState; // if the button is pressed or not
 
   float MV; // Manipulated Variable (ie. whether to turn on or off the relay!)
   float Error; // how off we are
@@ -170,10 +187,23 @@ void loop() {
   }
 
   // check if the button is pressed
-  if (digitalRead(BUTTON) == LOW) {
-    lastButtonState = 1;
+  buttonState = digitalRead(BUTTON);
+  if (lastButtonState != buttonState) {
+    if (buttonState == LOW) {
+      lastButtonState = LOW;
+      buttonTime = millis();
+    }
+    else {
+      lastButtonState = HIGH;
+    }  
   }
-  
+  if ( (buttonState == LOW) && (millis() - buttonTime > 2000) ) {
+    soft_reset();
+    menu_top();
+  }
+
+
+
   //adjust the target temperature when the encoder turns
   int newTarget = Enc.read();
 
@@ -211,48 +241,46 @@ SIGNAL(TIMER1_COMPA_vect) {
         // to avoid windup, we only integrate within 5%
          Summation = 0;
    }
+  if (menu != 1) {
+    // display current time and temperature only if not in a menu
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Time: ");
+    lcd.print(seconds_time);
+    lcd.print(" s");
+    lcd.setCursor(11,0);
+    lcd.print(target_temperature);
 
-  // display current time and temperature
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Time: ");
-  lcd.print(seconds_time);
-  lcd.print(" s");
-  lcd.setCursor(11,0);
-  lcd.print(target_temperature);
-
-  // go to line #1
-  lcd.setCursor(0,1);
-  lcd.print(airTemp);
-  lcd.setCursor(8,1);
-  lcd.print(chipTemp);
-#if ARDUINO >= 100
-  lcd.write(0xDF);
-#else
-  lcd.print(0xDF, BYTE);
-#endif
-  lcd.print("C ");
-  
-  // print out a log so we can see whats up
+    // go to line #1
+    lcd.setCursor(0,1);
+    lcd.print(airTemp);
+    lcd.setCursor(8,1);
+    lcd.print(chipTemp);
+  #if ARDUINO >= 100
+    lcd.write(0xDF);
+  #else
+    lcd.print(0xDF, BYTE);
+  #endif
+    lcd.print("C ");
+    }
+   // print out a log so we can see whats up
   Serial.print(seconds_time);
+  Serial.print("\t");
+  Serial.print(buttonState);
+  Serial.print("\t");
+  Serial.print(lastButtonState);
+  Serial.print("\t");
+  Serial.print(buttonTime);
   Serial.print("\t");
   Serial.print(airTemp);
   Serial.print("\t");
   Serial.print(target_temperature);
   Serial.print("\t");
-  Serial.print(target_temperature - airTemp); // the Error!
-  Serial.print("\t");
-  Serial.print(previous_temperature - airTemp); // the Slope of the Error
-  Serial.print("\t");
-  Serial.print(Summation); // the Integral of Error
-  Serial.print("\t");
-  Serial.print(Kp*(target_temperature - airTemp) + Ki*Summation + Kd*(previous_temperature - airTemp)); //  controller output
-  Serial.print("\t");
   Serial.println(relay_state);
 } 
 
 void menu_top(){
-  cli(); //disable interrupts
+  menu = 1; // set to prevent the interrupts from messing with the display
   
   lcd.clear();
 
@@ -269,7 +297,14 @@ void menu_top(){
   
  
  
- 
- 
-  sei(); // re-enable interrupts 
+// delay(5000);
+//  menu = 0;
+}
+
+void wdt_init(void) // to disable the watchdog timer after a soft reset
+{
+    MCUSR = 0;
+    wdt_disable();
+
+    return;
 }
