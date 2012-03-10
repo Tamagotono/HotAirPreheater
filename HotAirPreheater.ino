@@ -63,7 +63,9 @@ the input for the second TC and Pin 6 is the CS and wired to DP4.
 
 LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 
-Encoder Encoder(19,2);
+Encoder Enc(19,2);
+#define BUTTON 18
+
 
 //Setup the TCs
 MAX6675 airTC(SPI_CLK, AIR_CS, SPI_DATA);   //temp directly out of the heatgun
@@ -84,6 +86,8 @@ float Summation;        // The integral of error since time = 0
 
 int relay_state;        // whether the relay pin is high (on) or low (off)
 
+
+
 void setup() {  
   Serial.begin(9600); 
   Serial.println("HotAir Preheater");
@@ -101,6 +105,10 @@ void setup() {
   // ...and turn it off to start!
   pinMode(SSRPIN, LOW);
 
+  // set the encoder button as input
+  pinMode(BUTTON, INPUT);
+  digitalWrite(BUTTON, HIGH);
+
   // Set up 16x2 standard LCD  
   lcd.begin(16,2);
 
@@ -117,7 +125,7 @@ void setup() {
 
   // where we want to be
   target_temperature = 100.0;  // 100 degrees C default starting temp
-  Encoder.write(target_temperature); //set the encoder default value
+  Enc.write(target_temperature); //set the encoder default value
   
   // set the integral to 0
   Summation = 0;
@@ -131,13 +139,17 @@ void setup() {
 
  
 void loop() { 
+
   // we moved the LCD code into the interrupt so we don't have to worry about updating the LCD 
   // or reading from the airTC in the main loop
+
+  long buttonTime; // how long the encoder button has been pressed
+  int lastButtonState; // if the button is pressed or not
 
   float MV; // Manipulated Variable (ie. whether to turn on or off the relay!)
   float Error; // how off we are
   float Slope; // the change per second of the error
- 
+  
   
   Error = target_temperature - airTemp;
   Slope = previous_temperature - airTemp;
@@ -157,13 +169,20 @@ void loop() {
     digitalWrite(SSRPIN, LOW);
   }
 
+  // check if the button is pressed
+  if (digitalRead(BUTTON) == LOW) {
+    lastButtonState = 1;
+  }
+  
   //adjust the target temperature when the encoder turns
-  int newTarget = Encoder.read();
+  int newTarget = Enc.read();
 
   if (newTarget != target_temperature) {
+    cli();
     target_temperature = newTarget;
     lcd.setCursor(11,0);
     lcd.print(target_temperature);
+    sei();
   }
 }
 
@@ -177,12 +196,12 @@ SIGNAL(TIMER1_COMPA_vect) {
   // save the last reading for our slope calculation
   previous_temperature = airTemp;
 
-  // we will want to know the temperature in the main loop()
-  // instead of constantly reading it, we'll just use this interrupt
-  // to track it and save it once a second to 'airTemp'
-  airTemp = airTC.readCelsius();
+  // we will want to know the temperatures in the main loop()
+  // instead of constantly reading them, we'll just use this interrupt
+  // to track them and save them once a second to 'airTemp' and 'chipTemp'
+   airTemp = airTC.readCelsius();
   chipTemp = chipTC.readCelsius();
-//  airTemp = airTC.readFarenheit();
+
   
   // Sum the error over time
   Summation += target_temperature - airTemp;
@@ -231,3 +250,26 @@ SIGNAL(TIMER1_COMPA_vect) {
   Serial.print("\t");
   Serial.println(relay_state);
 } 
+
+void menu_top(){
+  cli(); //disable interrupts
+  
+  lcd.clear();
+
+  lcd.print("MENU");
+  delay(1500);
+  lcd.clear();
+  lcd.print("RESET");
+  lcd.setCursor(8,0);
+  lcd.print("MODE");
+  lcd.setCursor(0,1);
+  lcd.print("back");
+  lcd.setCursor(8,1);
+  lcd.print("SET TEMP");
+  
+ 
+ 
+ 
+ 
+  sei(); // re-enable interrupts 
+}
