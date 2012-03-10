@@ -1,3 +1,29 @@
+/*
+Hot Air Preheater
+
+**** SOFTWARE ****
+Software is based off of the "Reflowduino" sketch found on adafruit's github 
+https://github.com/adafruit/Reflowduino written by PaintYourDragon.
+
+Some portions were also taken from Scott Dixon's hotplate sketch 
+http://dorkbotpdx.org/blog/scott_d/temperature_controller_board_final_design
+
+The Encoder library is written by Paul Stoffregen <paul@pjrc.com>
+http://www.pjrc.com/teensy/td_libs_Encoder.html
+I chose this library because it allows use of 0,1 or 2 interupt pins for maximum flexability
+
+The MAX6675 library is also taken from adafruit's github
+https://github.com/adafruit/MAX6675-library
+
+The rest are standard Arduino 1.0 librarys.
+-----------------------------------------------------------------------------
+**** HARDWARE ****
+Rev 0.01
+The hardware is currently a kludge of Scott Dixon's hotplate PCB with a second MAX6675 chip
+stacked on top of the original, with pins 3 & 6 bent out and wired separately.  Pin 3 is
+the input for the second TC and Pin 6 is the CS and wired to DP4.
+
+*/
 #include <LiquidCrystal.h>
 #include <max6675.h>
 #include <Wire.h>
