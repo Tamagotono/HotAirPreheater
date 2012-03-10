@@ -15,6 +15,9 @@ I chose this library because it allows use of 0,1 or 2 interupt pins for maximum
 The MAX6675 library is also taken from adafruit's github
 https://github.com/adafruit/MAX6675-library
 
+The RESET function was taken directly from the following website:
+http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1222941939/12
+
 The rest are standard Arduino 1.0 libraries.
 -----------------------------------------------------------------------------
 **** HARDWARE ****
@@ -92,7 +95,7 @@ int menu = 0;
 volatile  long buttonTime = 0; // how long the encoder button has been pressed
 volatile  int lastButtonState = HIGH; // if the button is pressed or not
 volatile  int buttonState = HIGH; // current button state
-
+volatile  int menuSelection = 1;
 #define soft_reset()        \
 do                          \
 {                           \
@@ -197,22 +200,32 @@ void loop() {
       lastButtonState = HIGH;
     }  
   }
-  if ( (buttonState == LOW) && (millis() - buttonTime > 2000) ) {
-    soft_reset();
-    menu_top();
+  if ( (buttonState == LOW) && (millis() - buttonTime > 1000) && (menu != 1) ) {
+    menu_top(); // enter the menu if press
+  }
+  
+  if ( (buttonState == LOW) && (millis() - buttonTime > 5000) ) {
+    soft_reset(); // reset if encoder button is pressed for 5 seconds
   }
 
 
 
   //adjust the target temperature when the encoder turns
-  int newTarget = Enc.read();
+  
+  if (menu == 0) {
+  
+    int newTarget = Enc.read();
 
-  if (newTarget != target_temperature) {
-    cli();
-    target_temperature = newTarget;
-    lcd.setCursor(11,0);
-    lcd.print(target_temperature);
-    sei();
+    if (newTarget != target_temperature) {
+      cli();
+      target_temperature = newTarget;
+      lcd.setCursor(11,0);
+      lcd.print(target_temperature);
+      sei();
+    }
+  }
+  else {
+    menuSelection = (Enc.read()/4%4); // crude debouncing
   }
 }
 
@@ -243,6 +256,7 @@ SIGNAL(TIMER1_COMPA_vect) {
    }
   if (menu != 1) {
     // display current time and temperature only if not in a menu
+    menuSelection = 0;
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Time: ");
@@ -272,6 +286,9 @@ SIGNAL(TIMER1_COMPA_vect) {
   Serial.print("\t");
   Serial.print(buttonTime);
   Serial.print("\t");
+  Serial.print(menuSelection);
+  Serial.print("\t");
+//  Serial.print();
   Serial.print(airTemp);
   Serial.print("\t");
   Serial.print(target_temperature);
@@ -281,25 +298,24 @@ SIGNAL(TIMER1_COMPA_vect) {
 
 void menu_top(){
   menu = 1; // set to prevent the interrupts from messing with the display
+  Enc.write(0);
+  menuSelection = 0;
   
   lcd.clear();
-
-  lcd.print("MENU");
-  delay(1500);
-  lcd.clear();
-  lcd.print("RESET");
+  lcd.print((char)0b01111110);
+  lcd.print(" RESET");
   lcd.setCursor(8,0);
-  lcd.print("MODE");
+  lcd.print(" MODE");
   lcd.setCursor(0,1);
-  lcd.print("back");
+  lcd.print(" back");
   lcd.setCursor(8,1);
-  lcd.print("SET TEMP");
+  lcd.print(" TEMP");
+  
   
  
- 
-// delay(5000);
-//  menu = 0;
 }
+
+
 
 void wdt_init(void) // to disable the watchdog timer after a soft reset
 {
