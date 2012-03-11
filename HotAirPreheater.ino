@@ -27,7 +27,7 @@ stacked on top of the original, with pins 3 & 6 bent out and wired separately.  
 the input for the second TC and Pin 6 is the CS and wired to DP4.
 
 */
-#include <LiquidCrystal.h>
+#include <LiquidCrystalFast.h>
 #include <max6675.h>
 #include <Wire.h>
 #include <Encoder.h>
@@ -65,7 +65,13 @@ the input for the second TC and Pin 6 is the CS and wired to DP4.
 #define RS 12
 #define BL 5  // Backlight PWM control
 
-LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
+LiquidCrystalFast lcd(RS, RW, E, D4, D5, D6, D7);
+
+#define UPPERLEFT 0,0
+#define BOTTOMLEFT 0,1
+#define UPPERRIGHT 8,0
+#define BOTTOMRIGHT 8,1
+
 
 Encoder Enc(19,2);
 #define BUTTON 18
@@ -188,18 +194,7 @@ void loop() {
     relay_state = LOW;
     digitalWrite(SSRPIN, LOW);
   }
-
-  // check if the button is pressed
-  buttonState = digitalRead(BUTTON);
-  if (lastButtonState != buttonState) {
-    if (buttonState == LOW) {
-      lastButtonState = LOW;
-      buttonTime = millis();
-    }
-    else {
-      lastButtonState = HIGH;
-    }  
-  }
+  check_button_state();
   if ( (buttonState == LOW) && (millis() - buttonTime > 1000) && (menu != 1) ) {
     menu_top(); // enter the menu if press
   }
@@ -226,6 +221,9 @@ void loop() {
   }
   else {
     menuSelection = (Enc.read()/4%4); // crude debouncing
+      if (menuSelection < 0) {
+        menuSelection *= -1; // fixes negative numbers from being present
+      }
   }
 }
 
@@ -271,7 +269,7 @@ SIGNAL(TIMER1_COMPA_vect) {
     lcd.setCursor(8,1);
     lcd.print(chipTemp);
   #if ARDUINO >= 100
-    lcd.write(0xDF);
+    lcd.write(0xDF); // print the degree symbol
   #else
     lcd.print(0xDF, BYTE);
   #endif
@@ -300,19 +298,103 @@ void menu_top(){
   menu = 1; // set to prevent the interrupts from messing with the display
   Enc.write(0);
   menuSelection = 0;
-  
+// print the menu  
   lcd.clear();
-  lcd.print((char)0b01111110);
+  lcd.setCursor(UPPERLEFT);
   lcd.print(" RESET");
-  lcd.setCursor(8,0);
+  lcd.setCursor(UPPERRIGHT);
   lcd.print(" MODE");
-  lcd.setCursor(0,1);
+  lcd.setCursor(BOTTOMLEFT);
   lcd.print(" back");
-  lcd.setCursor(8,1);
+  lcd.setCursor(BOTTOMRIGHT);
   lcd.print(" TEMP");
-  
-  
+  while (menu == 1) {
+// display the pointer
+  if (menuSelection != (Enc.read()/4%4)) {
+   menuSelection = (Enc.read()/4%4);
+    switch (menuSelection) {
+      case 0:
+        clear_menu_marker();
+        lcd.write(" ");
+        lcd.setCursor(UPPERLEFT);
+        lcd.write((char)0x7E);
+        break;
+   
+      case 1:
+        clear_menu_marker();
+        lcd.write(" ");
+        lcd.setCursor(BOTTOMLEFT);
+        lcd.write((char)0x7E);
+        break;
+       
+      case 2:
+        clear_menu_marker();
+        lcd.print(" ");
+        lcd.setCursor(UPPERRIGHT);
+        lcd.write((char)0x7E);
+        break;
+       
+      case 3:
+        clear_menu_marker();
+        lcd.print(" ");
+        lcd.setCursor(BOTTOMRIGHT);
+        lcd.write((char)0x7E);
+        break;
+    }
+    check_button_state();
+    if ( (buttonState == LOW) && ((millis() - buttonTime) > 1000) ) {
+      switch (menuSelection) {
+        case 0:
+          soft_reset();
+          break;
+        case 1:
+//          menu = 0;
+          break;
+        case 3:
+          submenu_mode();
+          break;
+        case 4:
+          temp();
+          break;
+      } 
+    }
+   }
+ }
  
+}
+
+void submenu_mode() {
+  // placeholder for MODES submenu
+}
+
+void temp() {
+  // placeholder for something else, that I haven't thought of yet
+}
+
+void clear_menu_marker() {
+  lcd.setCursor(UPPERLEFT);
+  lcd.print(" ");
+  lcd.setCursor(BOTTOMLEFT);
+  lcd.print(" ");
+  lcd.setCursor(UPPERRIGHT);
+  lcd.print(" ");
+  lcd.setCursor(BOTTOMRIGHT);
+  lcd.print(" ");
+  lcd.home();
+}
+
+void check_button_state(){
+    // check if the button is pressed
+  buttonState = digitalRead(BUTTON);
+  if (lastButtonState != buttonState) {
+    if (buttonState == LOW) {
+      lastButtonState = LOW;
+      buttonTime = millis();
+    }
+    else {
+      lastButtonState = HIGH;
+    }  
+  }
 }
 
 
