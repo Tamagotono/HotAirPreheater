@@ -102,20 +102,14 @@ volatile  long buttonTime = 0; // how long the encoder button has been pressed
 volatile  int lastButtonState = HIGH; // if the button is pressed or not
 volatile  int buttonState = HIGH; // current button state
 volatile  int menuSelection = 1;
-#define soft_reset()        \
-do                          \
-{                           \
-    wdt_enable(WDTO_15MS);  \
-    for(;;)                 \
-    {                       \
-    }                       \
-} while(0)
 
-void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3")));
+// Soft reset code
+#define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out
+void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3"))); // needed to recover after calling the soft_reset
 
 
 void setup() {  
-  Serial.begin(9600); 
+  Serial.begin(115200); 
   Serial.println("HotAir Preheater");
   
   // The data header (we have a bunch of data to track)
@@ -195,6 +189,7 @@ void loop() {
     digitalWrite(SSRPIN, LOW);
   }
   check_button_state();
+  buttonState = digitalRead(BUTTON);
   if ( (buttonState == LOW) && (millis() - buttonTime > 1000) && (menu != 1) ) {
     menu_top(); // enter the menu if press
   }
@@ -309,10 +304,10 @@ void menu_top(){
   lcd.setCursor(BOTTOMRIGHT);
   lcd.print(" TEMP");
   while (menu == 1) {
-// display the pointer
-  if (menuSelection != (Enc.read()/4%4)) {
-   menuSelection = (Enc.read()/4%4);
-    switch (menuSelection) {
+  // display the pointer
+   if (menuSelection != (abs(Enc.read()/4%4))) {
+    menuSelection = (abs(Enc.read()/4%4));
+     switch (menuSelection) {
       case 0:
         clear_menu_marker();
         lcd.write(" ");
@@ -342,6 +337,8 @@ void menu_top(){
         break;
     }
     check_button_state();
+lcd.setCursor(0,0);
+lcd.print(digitalRead(BUTTON));
     if ( (buttonState == LOW) && ((millis() - buttonTime) > 1000) ) {
       switch (menuSelection) {
         case 0:
