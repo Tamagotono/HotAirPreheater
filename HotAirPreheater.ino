@@ -283,7 +283,7 @@ void check_button_state(){
 void adj_targ_temp(){
   switch (menu) {
   case 0: //Target Temperature Set
-    lcd.print("TEMP:");
+//    lcd.print("TEMP:");
     newTarget = Enc.read();
     if (newTarget != target_temperature) {
       cli();
@@ -300,7 +300,7 @@ void adj_targ_temp(){
       lcd.print(target_temperature);
       sei();
     }
-      menuSelection = 0;
+//      menuSelection = 0;
 //      lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Time: ");
