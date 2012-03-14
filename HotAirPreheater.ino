@@ -226,10 +226,10 @@ void loop() {
 SIGNAL(TIMER1_COMPA_vect) { 
 
   // time moves forward!
-      if (menu == lastMenu) {
-        seconds_time++;
-        lastMenu = menu;
-      }
+  if (menu == lastMenu) {
+    seconds_time++;
+    lastMenu = menu;
+  }
 
 
   // save the last reading for our slope calculation
@@ -295,7 +295,7 @@ void check_button_state(){
 
 
 // ***************************** mode_select ****************************
-void mode_select(){
+void mode_select(){//*****************************  MENU  *****************************
   if (option != lastOption) {
     lastEnc = Enc.read();
     Enc.write(option);
@@ -303,17 +303,15 @@ void mode_select(){
   check_button_state();
   switch (menu) {
   case 0:
-    option = ((Enc.read() / 4) % 3);
+    option = ((Enc.read() / 4) % 4);
     switch (option) {
     case 0://                       MANUAL MODE
-//      option = ((Enc.read() / 4) % 3);
       if (option != lastOption) {
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Mode: MANUAL");
         lastOption = option;
       }
-//      check_button_state();
       if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
         lcd.clear();
         menu = 1;
@@ -323,14 +321,12 @@ void mode_select(){
 
 
     case 1://                       PROGRAM MODE
-//      option = ((Enc.read() / 4) % 3);
       if (option != lastOption) {
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Mode: PROGRAM");
         lastOption = option;
       }
-//      check_button_state();
       if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
         lcd.clear();
         menu = 2;
@@ -339,14 +335,25 @@ void mode_select(){
       break;
 
     case 2://                       REMOTE MODE
-//      option = ((Enc.read() / 4) % 3);
       if (option != lastOption) {
         lcd.clear();
         lcd.setCursor(0,0);
         lcd.print("Mode: REMOTE");
         lastOption = option;
       }
-  //    check_button_state();
+      if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
+        lcd.clear();
+        menu = 3;
+        Enc.write(lastEnc);
+      }
+      break;
+    case 3://                       SETTINGS MODE
+      if (option != lastOption) {
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Mode: SETTINGS");
+        lastOption = option;
+      }
       if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
         lcd.clear();
         menu = 3;
@@ -356,58 +363,86 @@ void mode_select(){
     }
     break;
 
-  case 1:  //Target Temperature Set
-      if (menu != lastMenu) {
-        Enc.write(DEFAULT_TEMP);
-      }
-    check_button_state();
-    update_time();
-    update_temp();
+  case 1:  //******************************  MANUAL MODE  ******************************
+    manual_mode();
+    break;
 
-    newTarget = Enc.read();
-    if (newTarget != target_temperature) {
-      cli();
-      if (newTarget > MAX_TEMP) {
-        newTarget = 1;
-        Enc.write(newTarget);
-      }
-      if (newTarget <= 0) {
-        newTarget = MAX_TEMP;
-        Enc.write(newTarget);
-      }
-      target_temperature = newTarget;
-      update_temp();
-      sei();
-    }
+  case 2:  //*****************************  PROGRAM MODE  ******************************
+    program_mode();
+    break;
 
+  case 3:  //******************************  REMOTE MODE  ******************************
+    remote_mode();
     break;
-  case 2:
-    if (menu != lastMenu) {
-      lastMenu = menu;        
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("PROGRAM mode    placeholder");
-    }
-    lcd.display();
-    delay(750);
-    lcd.noDisplay();
-    delay(750);
-    //insert code here!
+
+  case 4:  //*****************************  SETTINGS MODE  *****************************
+    settings_mode();
     break;
-  case 3:
-    if (menu != lastMenu) {
-      lastMenu = menu;
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("REMOTE mode     placeholder");
-    }
-    lcd.display();
-    delay(750);
-    lcd.noDisplay();
-    delay(750);
-    //insert code here!
-    break;
+
   }
+}
+
+void manual_mode() {//******************************  MANUAL MODE  ******************************
+  if (menu != lastMenu) {
+    Enc.write(DEFAULT_TEMP);
+  }
+  check_button_state();
+  update_time();
+  update_temp();
+
+  newTarget = Enc.read();
+  if (newTarget != target_temperature) {
+    cli();
+    if (newTarget > MAX_TEMP) {
+      newTarget = 1;
+      Enc.write(newTarget);
+    }
+    if (newTarget <= 0) {
+      newTarget = MAX_TEMP;
+      Enc.write(newTarget);
+    }
+    target_temperature = newTarget;
+    update_temp();
+    sei();
+  }
+}
+
+void program_mode() {//*****************************  PROGRAM MODE  ******************************
+  if (menu != lastMenu) {
+    lastMenu = menu;        
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("PROGRAM mode    placeholder");
+  }
+  lcd.display();
+  delay(750);
+  lcd.noDisplay();
+  delay(750);
+  //insert code here!
+}
+
+void remote_mode() {//******************************  REMOTE MODE  ******************************
+  if (menu != lastMenu) {
+    lastMenu = menu;
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("REMOTE mode     placeholder");
+  }
+  lcd.display();
+  delay(750);
+  lcd.noDisplay();
+  delay(750);
+  //insert code here!
+}
+
+void settings_mode() {//*****************************  SETTINGS MODE  *****************************
+  if (menu != lastMenu) {
+    lastMenu = menu;
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("SETTINGS mode     placeholder");
+  }
+  lcd.display();
 }
 
 
@@ -456,6 +491,7 @@ void wdt_init(void) // to disable the watchdog timer after a soft reset
 
   return;
 }
+
 
 
 
