@@ -1,0 +1,52 @@
+# My todo/consider list for this project
+
+Add custom profiles:
+    Needs time and temp settings for:
+	Starting temp	-->	TSmin		(Temp Soak minimum temp)
+	TSmin		-->	TSmax		(Temp Soak maximum temp)
+	TSmax		-->	TP 		(Temp Peak)
+	TPsoak		-->	TPend		(Time spent at the peak temp)
+	TPend		-->	room temp	(should be expressed in degrees/sec)
+
+
+
+
+
+                                |<---Critical  Zone--->|
+                                |     ( Tl to TP )     |
+                                |                      |
+                                |                      |
+                                | TPsoak    TPend      |
+                                |      \____/          |                                   _
+TP------------------------------+------/|XX|\          |                                   |
+                                |     /X|XX|X\_        |                                   |
+                                |    /XX|XX|XXX\_      |                                   |
+                                |   /XXX|XX|XXXXX\_    |                                   |
+                                |  /XXXX|XX|XXXXXXX\_  |                                   |- Ramp Down
+Tl------------------------------+_/XXXXX|XX|XXXXXXXXX\_|                                   |   ( should be expressed in
+                                /       |  |            \_                                 |     max degrees/second )
+                               /        |  |              \__                              |
+TSmax-------------------------/         |  |                 \___                          |
+                        _____/          |  |                     \__                       |
+                  _____/     |          |  |                        \___                   |
+TSmin------______/           |          |  |                            \____              |
+          /|                 |          |  |                                 \_____        |
+         / |                 |          |  |                                       \______ |
+Start---/__|_________________|__________|__|______________________________________________\|__
+ temp      |                 |          |  |                                               |
+           |<---TS preheat-->|<--ramp-->|  |<-----------------Ramp Down------------------->|
+                                  up
+
+
+Be able to name the custom profiles:
+	use rotary encoder to scroll through the alphabet, use button to select
+
+
+Have the LCD display flash and buzzer chirp while temps are in the range of solder melting
+	to caution the user to be careful not to bump the board.
+
+Add cell phone vibration unit to the board holder that will give small vibration when the
+	solder is melted, to help the chips self-align onto the pads.
+
+	NOTE: 	this could be a very good, or very bad idea! Needs experimentation to
+		see which it is.

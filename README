@@ -25,3 +25,12 @@ The hardware is currently a kludge of Scott Dixon's hotplate PCB with a second M
 stacked on top of the original, with pins 3 & 6 bent out and wired separately.  Pin 3 is
 the input for the second TC and Pin 6 is the CS and wired to DP4.
 
+
+
+NOTE: While researching temperature profiles, I found where it was suggested
+	to tap the reflow oven after the solder has melted, to allow it to 
+	settle into proper alignment.  I am considering adding a small, cellphone 
+	vibrator to the base of the board support arms and having it kick on automatically
+	for a few pulses to perform this task.  Not sure if this is a good idea or not.
+	I guess I will have to experiment with this after the rest of the unit is finished.
+
