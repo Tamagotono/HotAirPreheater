@@ -28,39 +28,33 @@ Hot Air Preheater
  thermometer).
  
  */
-#include <LiquidCrystalFast.h>
+#include <LiquidCrystal.h>
 #include <max6675.h>
 #include <Wire.h>
 #include <Encoder.h>
-#include <avr/wdt.h> //watchdog timer needed for the RESET function
+#include <avr/wdt.h>                         //watchdog timer needed for the RESET function
 
 #define BUTTON_PRESS_TIME 150
 #define RESET_TIME 2000
 
+#define SSRPIN    13                         // The pin we use to control the SSR
 
-
-
-// The pin we use to control the SSR
-#define SSRPIN 13
-
-// The pin we use to control the fan speed
-#define FANPIN 3
+#define FANPIN    3                          // The pin we use to control the fan speed
 
 // The SPI pins we use for the TC sensors
-#define SPI_CLK 17
-#define SPI_DATA 16
+#define SPI_CLK   17
+#define SPI_DATA  16
 
 // The SPI Chip Select (CS) pins
-#define CHIP_CS 15  // CS for the chipTC
-#define AIR_CS 4  // CS for the airTC
+#define CHIP_CS   15                         // CS for the chipTC
+#define AIR_CS    4                          // CS for the airTC
 
 // PID pins
-#define Kp  10  // the Proportional control constant
-#define Ki  0.5 // the Integral control constant
-#define Kd  100 // the Derivative control constant 
+#define Kp        10                         // the Proportional control constant
+#define Ki        0.5                        // the Integral control constant
+#define Kd        100                        // the Derivative control constant 
 
-// Windup error prevention, 5% by default
-#define WINDUPPERCENT 0.05  
+#define WINDUPPERCENT 0.05                   // Windup error prevention, 5% by default
 
 // Classic 16x2 LCD used
 #define D4 7
@@ -70,9 +64,9 @@ Hot Air Preheater
 #define RW 11
 #define E 6
 #define RS 12
-#define BL 5  // Backlight PWM control
+#define BL 5                                 // Backlight PWM control
 
-LiquidCrystalFast lcd(RS, RW, E, D4, D5, D6, D7);
+LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 
 #define UPPERLEFT 0,0
 #define BOTTOMLEFT 0,1
@@ -87,36 +81,36 @@ Encoder Enc(19,2);
 //Setup the TCs
 #define MAX_TEMP 999
 #define DEFAULT_TEMP 150
-MAX6675 airTC(SPI_CLK, AIR_CS, SPI_DATA);   //temp directly out of the heatgun
-MAX6675 chipTC(SPI_CLK, CHIP_CS, SPI_DATA); //temp measured at the chip/board
+MAX6675 airTC(SPI_CLK, AIR_CS, SPI_DATA);    //temp directly out of the heatgun
+MAX6675 chipTC(SPI_CLK, CHIP_CS, SPI_DATA);  //temp measured at the chip/board
 
 
 
 
 // volatile means it is going to be messed with inside an interrupt 
 // otherwise the optimization code will ignore the interrupt
-volatile long  seconds_time = 0;      // this will get incremented once a second
-volatile float airTemp;               // in celsius
-volatile float chipTemp;              // in celsius
-volatile float previous_temperature;  // the last reading (1 second ago)
+volatile long  seconds_time = 0;            // this will get incremented once a second
+volatile float airTemp;                     // in celsius
+volatile float chipTemp;                    // in celsius
+volatile float previous_temperature;        // the last reading (1 second ago)
 
-int target_temperature; // the target temperature for the air
-unsigned int set_temperature;    // the target temperature for the chip/board
-unsigned int newTarget = 0;
+int target_temperature;                     // the target temperature for the air
+unsigned int   set_temperature;             // the target temperature for the chip/board
+unsigned int   newTarget = 0;
 
 // we need this to be a global variable because we add error each second
-float Summation;        // The integral of error since time = 0
+float Summation;                            // The integral of error since time = 0
 
-int relay_state;        // whether the relay pin is high (on) or low (off)
+int relay_state;                            // whether the relay pin is high (on) or low (off)
 int menu = 0;
 int lastMenu = 1;
 int option = 0;
 int lastOption = 1;
 int lastEnc = 0;
 
-volatile  long buttonTime = 0; // how long the encoder button has been pressed
-int lastButtonState = LOW; // if the button is pressed or not
-int buttonState = HIGH; // current button state
+volatile  long buttonTime =   0;              // how long the encoder button has been pressed
+int lastButtonState =         LOW;            // if the button is pressed or not
+int buttonState =             HIGH;           // current button state
 volatile  int menuSelection = 1;
 
 // Soft reset code
@@ -177,11 +171,8 @@ void setup() {
   // Setup 1 Hz timer to refresh display using 16 Timer 1
   TCCR1A = 0;                           // CTC mode (interrupt after timer reaches OCR1A)
   TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS12);    // CTC & clock div 1024
-  OCR1A = 15609;                                 // 16mhz / 1024 / 15609 = 1 Hz
-  //  OCR1A = 1560;  // X10 speedup for testing        // 16mhz / 102 / 1560 = 100 Hz
+  OCR1A  = 15609;                                 // 16mhz / 1024 / 15609 = 1 Hz
   TIMSK1 = _BV(OCIE1A);                          // turn on interrupt
-
-
 
 }
 
@@ -250,7 +241,6 @@ SIGNAL(TIMER1_COMPA_vect) {
     // to avoid windup, we only integrate within 5%
     Summation = 0;
   }
-  //  mode_select();
   // print out a log so we can see whats up
   Serial.print(seconds_time);
   Serial.print("\t");
@@ -262,7 +252,6 @@ SIGNAL(TIMER1_COMPA_vect) {
   Serial.print("\t");
   Serial.print(option);
   Serial.print("\t");
-  //  Serial.print();
   Serial.print(airTemp);
   Serial.print("\t");
   Serial.print(target_temperature);
@@ -286,8 +275,6 @@ void check_button_state(){
     }  
   }
   lastButtonState = buttonState;
-
-  //  Check for a 5 second button press, if so then perform a soft_reset
   if ( (buttonState == LOW) && (millis() - buttonTime >= RESET_TIME) ) {
     soft_reset(); // reset if encoder button is pressed for 5 seconds
   }
@@ -305,60 +292,25 @@ void mode_select(){//*****************************  MENU  **********************
   case 0:
     option = ((Enc.read() / 4) % 4);
     switch (option) {
+
     case 0://                       MANUAL MODE
-      if (option != lastOption) {
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Mode: MANUAL");
-        lastOption = option;
-      }
-      if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
-        lcd.clear();
-        menu = 1;
-        Enc.write(lastEnc);
-      }
+      lcd_display_once( "Mode: MANUAL" );
+      TopMenuSelect( 1 );
       break;
 
-
     case 1://                       PROGRAM MODE
-      if (option != lastOption) {
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Mode: PROGRAM");
-        lastOption = option;
-      }
-      if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
-        lcd.clear();
-        menu = 2;
-        Enc.write(lastEnc);
-      }
+      lcd_display_once( "Mode: PROGRAM" );
+      TopMenuSelect( 2 );
       break;
 
     case 2://                       REMOTE MODE
-      if (option != lastOption) {
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Mode: REMOTE");
-        lastOption = option;
-      }
-      if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
-        lcd.clear();
-        menu = 3;
-        Enc.write(lastEnc);
-      }
+      lcd_display_once( "Mode: REMOTE" );
+      TopMenuSelect( 3 );
       break;
+
     case 3://                       SETTINGS MODE
-      if (option != lastOption) {
-        lcd.clear();
-        lcd.setCursor(0,0);
-        lcd.print("Mode: SETTINGS");
-        lastOption = option;
-      }
-      if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
-        lcd.clear();
-        menu = 3;
-        Enc.write(lastEnc);
-      }
+      lcd_display_once( "Mode: SETTINGS" );
+      TopMenuSelect( 4 );
       break;
     }
     break;
@@ -381,6 +333,26 @@ void mode_select(){//*****************************  MENU  **********************
 
   }
 }
+
+void TopMenuSelect( int MenuItem ){ // *************** Top Menu Select *****************
+  if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
+    lcd.clear();
+    menu = MenuItem;
+    Enc.write(lastEnc);
+  }
+}
+
+
+void lcd_display_once( String DisplayText ){// ********* LCD DISPLAY ONCE ************
+  if (option != lastOption) {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print( DisplayText );
+    lastOption = option;
+  }
+}
+
+
 
 void manual_mode() {//******************************  MANUAL MODE  ******************************
   if (menu != lastMenu) {
@@ -491,6 +463,7 @@ void wdt_init(void) // to disable the watchdog timer after a soft reset
 
   return;
 }
+
 
 
 
