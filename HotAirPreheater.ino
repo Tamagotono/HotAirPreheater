@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /********************************************************************************************************
  *                                                                                                       *
  *                                        Hot Air Preheater                                              *
@@ -36,6 +37,7 @@
 #include <max6675.h>
 #include <Wire.h>
 #include <Encoder.h>
+<<<<<<< HEAD
 #include <EEPROM.h>
 #include <avr/wdt.h>           //watchdog timer needed for the RESET function
 
@@ -47,18 +49,19 @@
 #define FANPIN 3               // The pin we use to control the fan speed
 
 // The SPI pins we use for the TC sensors
-#define SPI_CLK 17
-#define SPI_DATA 16
+#define SPI_CLK   17
+#define SPI_DATA  16
+
 // The SPI Chip Select (CS) pins
-#define CHIP_CS 15           // CS for the chipTC
-#define AIR_CS 4             // CS for the airTC
+#define CHIP_CS   15                         // CS for the chipTC
+#define AIR_CS    4                          // CS for the airTC
 
 // PID pins
-#define Kp  10               // the Proportional control constant
-#define Ki  0.5              // the Integral control constant
-#define Kd  100              // the Derivative control constant 
+#define Kp        10                         // the Proportional control constant
+#define Ki        0.5                        // the Integral control constant
+#define Kd        100                        // the Derivative control constant 
 
-#define WINDUPPERCENT 0.05   // Windup error prevention, 5% by default
+#define WINDUPPERCENT 0.05                   // Windup error prevention, 5% by default
 
 // Classic 16x2 LCD used
 #define D4 7
@@ -68,8 +71,17 @@
 #define RW 11
 #define E 6
 #define RS 12
-#define BL 5                 // Backlight PWM control
+#define BL 5                                 // Backlight PWM control
 
+LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
+
+#define UPPERLEFT 0,0
+#define BOTTOMLEFT 0,1
+#define UPPERRIGHT 8,0
+#define BOTTOMRIGHT 8,1
+
+
+<<<<<<< HEAD
 // defines for menu options
 #define Top             0
 #define Settings        1
@@ -91,30 +103,37 @@
 
 LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 Encoder Enc(19,2);
+#define BUTTON 18
+
 
 //Setup the TCs
 #define MAX_TEMP 999
 #define DEFAULT_TEMP 150
-MAX6675 airTC(SPI_CLK, AIR_CS, SPI_DATA);   //temp directly out of the heatgun
-MAX6675 chipTC(SPI_CLK, CHIP_CS, SPI_DATA); //temp measured at the chip/board
+MAX6675 airTC(SPI_CLK, AIR_CS, SPI_DATA);    //temp directly out of the heatgun
+MAX6675 chipTC(SPI_CLK, CHIP_CS, SPI_DATA);  //temp measured at the chip/board
+
+
+
 
 // volatile means it is going to be messed with inside an interrupt 
 // otherwise the optimization code will ignore the interrupt
-volatile long  seconds_time = 0;       // this will get incremented once a second
-volatile float airTemp;                // in celsius
-volatile float chipTemp;               // in celsius
-volatile float previous_temperature;   // the last reading (1 second ago)
+volatile long  seconds_time = 0;            // this will get incremented once a second
+volatile float airTemp;                     // in celsius
+volatile float chipTemp;                    // in celsius
+volatile float previous_temperature;        // the last reading (1 second ago)
 
+<<<<<<< HEAD
 int target_temperature;                // the target temperature for the air
 unsigned int set_temperature;          // the target temperature for the chip/board
 int newTargetTemp = 0;
 
 // we need this to be a global variable because we add error each second
-float Summation;                       // The integral of error since time = 0
+float Summation;                            // The integral of error since time = 0
 
-int relay_state;                       // whether the relay pin is high (on) or low (off)
-int topMenu = 0;
+int relay_state;                            // whether the relay pin is high (on) or low (off)
+int menu = 0;
 int lastMenu = 1;
+<<<<<<< HEAD
 int topMenuOption = 0;
 int lastTopMenuOption = 1;
 int TM_Enc = 0;        // Top Menu      Encoder count storage
@@ -143,8 +162,8 @@ int  buttonState = HIGH;     // current button state
 //int  menuSelection = 1;
 
 // Soft reset code
-#define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)          // code to enable the soft reset by calling the watchdog timer then having it time-out
-void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3")));  // needed to recover after calling the soft_reset
+#define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out
+void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3"))); // needed to recover after calling the soft_reset
 
 
 // *****************************************************************
@@ -156,6 +175,7 @@ void setup() {
   Serial.println("HotAir Preheater");
 
   // The data header (we have a bunch of data to track)
+<<<<<<< HEAD
   Serial.print("Time (s)\buttonState\t topMenu\tbuttonTime\ttopMenuOption\tairTemp\ttargetTemp");
   /*
   // Now that we are mucking with stuff, we should track our variables
@@ -167,13 +187,17 @@ void setup() {
    Serial.println(Kd);
    */
 
-  pinMode(SSRPIN, OUTPUT);          // the relay pin controls the heater
-  pinMode(SSRPIN, LOW);             // ...and turn it off to start!
+  // the relay pin controls the heater
+  pinMode(SSRPIN, OUTPUT);
+  // ...and turn it off to start!
+  pinMode(SSRPIN, LOW);
 
-  pinMode(BUTTON, INPUT);           // set the encoder button as input
-  digitalWrite(BUTTON, HIGH);       // enable the internal pullup resistor
+  // set the encoder button as input
+  pinMode(BUTTON, INPUT);
+  digitalWrite(BUTTON, HIGH);
 
-  lcd.begin(16,2);                  // Set up 16x2 standard LCD  
+  // Set up 16x2 standard LCD  
+  lcd.begin(16,2);
 
   // clear the screen and print out the current version
   lcd.clear();
@@ -186,16 +210,19 @@ void setup() {
   delay(750);
   lcd.clear();
 
-  target_temperature = DEFAULT_TEMP;  // degrees C default starting temp
-  Enc.write(target_temperature);      //set the encoder default value
 
+  // where we want to be
+  target_temperature = DEFAULT_TEMP;  // degrees C default starting temp
+  Enc.write(target_temperature); //set the encoder default value
+
+<<<<<<< HEAD
     Summation = 0;                      // set the integral to 0
 
     // Setup 1 Hz timer to refresh display using 16 Timer 1
   TCCR1A = 0;                                     // CTC mode (interrupt after timer reaches OCR1A)
   TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS12);    // CTC & clock div 1024
-  OCR1A = 15609;                                  // 16mhz / 1024 / 15609 = 1 Hz
-  TIMSK1 = _BV(OCIE1A);                           // turn on interrupt
+  OCR1A  = 15609;                                 // 16mhz / 1024 / 15609 = 1 Hz
+  TIMSK1 = _BV(OCIE1A);                          // turn on interrupt
 
 }
 
@@ -228,6 +255,7 @@ void loop() {
   }
 
   check_button_state();
+<<<<<<< HEAD
   top_menu();
 }
 
@@ -590,7 +618,6 @@ void wdt_init(void) // to disable the watchdog timer after a soft reset
 
   return;
 }
-
 
 
 
