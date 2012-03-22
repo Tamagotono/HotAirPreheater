@@ -7,9 +7,9 @@
 SIGNAL(TIMER1_COMPA_vect) { 
 
   // time moves forward!
-  if (menu == lastMenu) {
+  if (TM_Selection == lastMenu) {
     seconds_time++;
-    lastMenu = menu;
+    lastMenu = TM_Selection;
   }
 
 
@@ -36,11 +36,11 @@ SIGNAL(TIMER1_COMPA_vect) {
   Serial.print("\t");
   Serial.print(buttonState);
   Serial.print("\t");
-  Serial.print(menu);
+  Serial.print(TM_Selection);
   Serial.print("\t");
   Serial.print(buttonTime);
   Serial.print("\t");
-  Serial.print(option);
+  Serial.print(CurrentlyDisplayedItem);
   Serial.print("\t");
   Serial.print(airTemp);
   Serial.print("\t");
@@ -48,6 +48,32 @@ SIGNAL(TIMER1_COMPA_vect) {
   Serial.print("\t");
   Serial.println(relay_state);
 } 
+
+
+// *************** Top Menu Select *****************
+void CheckForSelection( int* MenuLevelSelection, int MenuItem ){ 
+// CheckForSelection( int *MenuLevelSelection, MenuItemNumber );
+// must pass the address of the variable that stores the last selected menu item for that menu level
+// if the button has been pressed long enough it will clear the display and update that variable with MenuItem.
+//i.e.  CheckForSelection( &TM_Selection, 4 ) will update TM_Selection to the value of 4 if the button has been
+// held down for greater than BUTTON_PRESS_TIME.
+  if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
+    lcd.clear();
+    *MenuLevelSelection = MenuItem;
+    Enc.write(lastEnc);
+  }
+}
+
+
+
+void lcd_display_once( String DisplayText ){// ********* LCD DISPLAY ONCE ************
+  if (CurrentlyDisplayedItem != LastDisplayedItem) {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print( DisplayText );
+    LastDisplayedItem = CurrentlyDisplayedItem;
+  }
+}
 
 
 // **************************** CHECK BUTTON STATE ************************
@@ -80,43 +106,48 @@ void wdt_init(void) // to disable the watchdog timer after a soft reset
   return;
 }
 
-void manual_mode() {//******************************  MANUAL MODE  ******************************
-  if (menu != lastMenu) {
-    Enc.write(DEFAULT_TEMP);
-  }
-  check_button_state();
-  update_time();
-  update_temp();
+// ***************************** DisplayTemp ****************************
+void DisplayTemp(){
+  //Display temperature setpoint
+  lcd.setCursor(11,0);
+  lcd.print(target_temperature);
+  #if ARDUINO >= 100
+  lcd.write(0xDF); // print the degree symbol
+#else
+  lcd.print(0xDF, BYTE);
+#endif
+  lcd.print("C ");
 
-  newTarget = Enc.read();
-  if (newTarget != target_temperature) {
-    cli();
-    if (newTarget > MAX_TEMP) {
-      newTarget = 1;
-      Enc.write(newTarget);
-    }
-    if (newTarget <= 0) {
-      newTarget = MAX_TEMP;
-      Enc.write(newTarget);
-    }
-    target_temperature = newTarget;
-    update_temp();
-    sei();
-  }
-}
-
-// ***************************** update_temp ****************************
-void update_temp(){
+  lcd.print("  "); // get rid of any trailing digits 
   // go to line #1
+//  lcd.setCursor(0,1);
+  //Display current temp
+//  lcd.print(airTemp); // Display temperature of the airstream
   lcd.setCursor(0,1);
-  lcd.print(airTemp);
-  lcd.setCursor(8,1);
-  lcd.print(chipTemp);
+  lcd.print(chipTemp); // Display temperature at the board
 #if ARDUINO >= 100
   lcd.write(0xDF); // print the degree symbol
 #else
   lcd.print(0xDF, BYTE);
 #endif
   lcd.print("C ");
+}
+
+
+// ***************************** DisplayTime ****************************
+void DisplayTime() {
+  int minutes = (seconds_time / 60);
+  int seconds = (seconds_time % 60);
+  lcd.setCursor(0, 0);
+  lcd.print("T:");
+  if ( minutes <= 9) { // add a leading space to the minute clock if less than 10 seconds
+    lcd.print(" ");
+  }    
+  lcd.print( minutes ); // minutes
+  lcd.print(":");
+  if ( seconds <= 9) { // add a leading zero to the seconds clock if less than 10 seconds
+    lcd.print("0");
+  }
+  lcd.print( seconds ); // seconds
 }
 

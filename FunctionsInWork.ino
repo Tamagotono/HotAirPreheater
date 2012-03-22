@@ -9,34 +9,34 @@
 
 // ***************************** mode_select ****************************
 void mode_select(){//*****************************  MENU  *****************************
-  if (option != lastOption) {
+  if (CurrentlyDisplayedItem != LastDisplayedItem) { //if the menu item displayed is different than last time...
     lastEnc = Enc.read();
-    Enc.write(option);
+    Enc.write(CurrentlyDisplayedItem);
   }
   check_button_state();
-  switch (menu) {
+  switch (TM_Selection) {
   case 0:
-    option = ((Enc.read() / 4) % 4);
-    switch (option) {
+    CurrentlyDisplayedItem = ( ( abs( Enc.read() ) / 4 ) %4 ); // abs function to deal with negitive encoder values
+    switch (CurrentlyDisplayedItem) {
 
     case 0://                       MANUAL MODE
       lcd_display_once( "Mode: MANUAL" );
-      TopMenuSelect( 1 );
+      CheckForSelection( &TM_Selection, 1 );
       break;
 
     case 1://                       PROGRAM MODE
       lcd_display_once( "Mode: PROGRAM" );
-      TopMenuSelect( 2 );
+      CheckForSelection( &TM_Selection, 2 );
       break;
 
     case 2://                       REMOTE MODE
       lcd_display_once( "Mode: REMOTE" );
-      TopMenuSelect( 3 );
+      CheckForSelection( &TM_Selection, 3 );
       break;
 
     case 3://                       SETTINGS MODE
       lcd_display_once( "Mode: SETTINGS" );
-      TopMenuSelect( 4 );
+      CheckForSelection( &TM_Selection, 4 );
       break;
     }
     break;
@@ -60,28 +60,37 @@ void mode_select(){//*****************************  MENU  **********************
   }
 }
 
-void TopMenuSelect( int MenuItem ){ // *************** Top Menu Select *****************
-  if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_TIME) ) {
-    lcd.clear();
-    menu = MenuItem;
-    Enc.write(lastEnc);
+
+void manual_mode() {//******************************  MANUAL MODE  ******************************
+  if (TM_Selection != lastMenu) {
+    Enc.write(DEFAULT_TEMP);
   }
-}
+  check_button_state();
+  DisplayTime();
+  DisplayTemp();
+  DisplayFanSpeed();
 
-
-void lcd_display_once( String DisplayText ){// ********* LCD DISPLAY ONCE ************
-  if (option != lastOption) {
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print( DisplayText );
-    lastOption = option;
+  newTarget = Enc.read();
+  if (newTarget != target_temperature) {
+    cli();
+    if (newTarget > MAX_TEMP) {
+      newTarget = 1;
+      Enc.write(newTarget);
+    }
+    if (newTarget <= 0) {
+      newTarget = MAX_TEMP;
+      Enc.write(newTarget);
+    }
+    target_temperature = newTarget;
+    DisplayTemp();
+    sei();
   }
 }
 
 
 void program_mode() {//*****************************  PROGRAM MODE  ******************************
-  if (menu != lastMenu) {
-    lastMenu = menu;        
+  if (TM_Selection != lastMenu) {
+    lastMenu = TM_Selection;        
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("PROGRAM mode    placeholder");
@@ -94,8 +103,8 @@ void program_mode() {//*****************************  PROGRAM MODE  ************
 }
 
 void remote_mode() {//******************************  REMOTE MODE  ******************************
-  if (menu != lastMenu) {
-    lastMenu = menu;
+  if (TM_Selection != lastMenu) {
+    lastMenu = TM_Selection;
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("REMOTE mode     placeholder");
@@ -108,8 +117,8 @@ void remote_mode() {//******************************  REMOTE MODE  *************
 }
 
 void settings_mode() {//*****************************  SETTINGS MODE  *****************************
-  if (menu != lastMenu) {
-    lastMenu = menu;
+  if (TM_Selection != lastMenu) {
+    lastMenu = TM_Selection;
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("SETTINGS mode     placeholder");
@@ -118,23 +127,10 @@ void settings_mode() {//*****************************  SETTINGS MODE  **********
 }
 
 
-// ***************************** update_time ****************************
-void update_time() {
-  int minutes = (seconds_time / 60);
-  int seconds = (seconds_time % 60);
-  lcd.setCursor(0, 0);
-  lcd.print("Time:");
-  if ( minutes <= 9) { // add a leading space to the minute clock if less than 10 seconds
-    lcd.print(" ");
-  }    
-  lcd.print( minutes ); // minutes
-  lcd.print(":");
-  if ( seconds <= 9) { // add a leading zero to the seconds clock if less than 10 seconds
-    lcd.print("0");
-  }
-  lcd.print( seconds ); // seconds
-  lcd.setCursor(13,0);
-  lcd.print(target_temperature);
-  lcd.print("  "); // get rid of any trailing digits 
+void DisplayFanSpeed(){
+  lcd.setCursor(8,1);
+  lcd.print("Fan: ");
+  lcd.print( FanSpeed );
+  lcd.print("%");
 }
 

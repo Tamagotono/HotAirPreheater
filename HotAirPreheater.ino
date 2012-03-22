@@ -95,25 +95,28 @@ volatile float chipTemp;                    // in celsius
 volatile float previous_temperature;        // the last reading (1 second ago)
 
 int target_temperature;                     // the target temperature for the air
-unsigned int   set_temperature;             // the target temperature for the chip/board
-unsigned int   newTarget = 0;
+int   set_temperature;             // the target temperature for the chip/board
+int newTarget = 0;
+
 
 // we need this to be a global variable because we add error each second
 float Summation;                            // The integral of error since time = 0
 
 int relay_state;                            // whether the relay pin is high (on) or low (off)
-int menu = 0;
 int lastMenu = 1;
-int option = 0;
-int lastOption = 1;
+int CurrentlyDisplayedItem = 0;
+int LastDisplayedItem = 1;
 int lastEnc = 0;
 
-volatile  long buttonTime =   0;              // how long the encoder button has been pressed
+long buttonTime =   0;              // how long the encoder button has been pressed
 int lastButtonState =         LOW;            // if the button is pressed or not
 int buttonState =             HIGH;           // current button state
-volatile  int menuSelection = 1;
+int menuSelection = 1;
+int TM_Selection = 0;                          // stores the value of the last menu item selected for the Top level Menu
+int SM_Selection = 0;                          // stores the value of the last menu item selected for the Settings Menu
 
-// Soft reset code
+int FanSpeed =     20;                         // Default fan speed
+// Soft reset code.............  DON'T TOUCH  ................
 #define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out
 void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3"))); // needed to recover after calling the soft_reset
 
@@ -127,7 +130,7 @@ void setup() {
   Serial.println("HotAir Preheater");
 
   // The data header (we have a bunch of data to track)
-  Serial.print("Time (s)\buttonState\t menu\tbuttonTime\toption\tairTemp\ttargetTemp");
+  Serial.print("Time (s)\buttonState\t TM_Selection\tbuttonTime\tCurrentlyDisplayedItem\tairTemp\ttargetTemp");
 
   // Now that we are mucking with stuff, we should track our variables
   Serial.print("\t\tKp = "); 
