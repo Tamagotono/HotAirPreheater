@@ -35,7 +35,8 @@ Hot Air Preheater
 #include <avr/wdt.h>                         //watchdog timer needed for the RESET function
 
 #define BUTTON_PRESS_TIME 150
-#define RESET_TIME 2000
+#define BACK_MENU 2000
+#define RESET_TIME 4000
 
 #define SSRPIN    13                         // The pin we use to control the SSR
 
@@ -91,7 +92,7 @@ volatile float chipTemp;                    // in celsius
 volatile float previous_temperature;        // the last reading (1 second ago)
 
 int target_temperature;                     // the target temperature for the air
-int   set_temperature;             // the target temperature for the chip/board
+int   set_temperature = 20;             // the target temperature for the chip/board
 int newTarget = 0;
 
 
