@@ -38,8 +38,16 @@
 #include <Wire.h>
 #include <Encoder.h>
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include <EEPROM.h>
 #include <avr/wdt.h>           //watchdog timer needed for the RESET function
+=======
+#include <avr/wdt.h>                         //watchdog timer needed for the RESET function
+
+#define BUTTON_PRESS_TIME 150
+#define BACK_MENU 2000
+#define RESET_TIME 4000
+>>>>>>> devel
 
 #define BUTTON 18              // Encoder's push button is on Digital Pin 18
 #define BUTTON_PRESS_DETECT_TIME 150  // Have to press the button for a minimum of 150mS for it to detect it as pressed
@@ -75,6 +83,7 @@
 
 LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 
+<<<<<<< HEAD
 #define UPPERLEFT 0,0
 #define BOTTOMLEFT 0,1
 #define UPPERRIGHT 8,0
@@ -102,6 +111,8 @@ LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 #define TEMP_MAX_ADDRESS 1
 
 LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
+=======
+>>>>>>> devel
 Encoder Enc(19,2);
 #define BUTTON 18
 
@@ -113,6 +124,8 @@ MAX6675 airTC(SPI_CLK, AIR_CS, SPI_DATA);    //temp directly out of the heatgun
 MAX6675 chipTC(SPI_CLK, CHIP_CS, SPI_DATA);  //temp measured at the chip/board
 
 
+#define MAX_FAN_SPEED 100
+#define MIN_FAN_SPEED 0
 
 
 // volatile means it is going to be messed with inside an interrupt 
@@ -123,16 +136,23 @@ volatile float chipTemp;                    // in celsius
 volatile float previous_temperature;        // the last reading (1 second ago)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 int target_temperature;                // the target temperature for the air
 unsigned int set_temperature;          // the target temperature for the chip/board
 int newTargetTemp = 0;
+=======
+int target_temperature;                     // the target temperature for the air
+int   set_temperature = 20;             // the target temperature for the chip/board
+int newTarget = 0;
+
+>>>>>>> devel
 
 // we need this to be a global variable because we add error each second
 float Summation;                            // The integral of error since time = 0
 
 int relay_state;                            // whether the relay pin is high (on) or low (off)
-int menu = 0;
 int lastMenu = 1;
+<<<<<<< HEAD
 <<<<<<< HEAD
 int topMenuOption = 0;
 int lastTopMenuOption = 1;
@@ -160,11 +180,28 @@ volatile  long buttonTime = 0;         // how long the encoder button has been p
 int  lastButtonState = LOW;  // if the button is pressed or not
 int  buttonState = HIGH;     // current button state
 //int  menuSelection = 1;
+=======
+int CurrentlyDisplayedItem = 0;
+int LastDisplayedItem = 1;
+int lastEnc = 0;
 
-// Soft reset code
-#define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out
+long buttonTime =   0;              // how long the encoder button has been pressed
+int lastButtonState =         LOW;            // if the button is pressed or not
+int buttonState =             HIGH;           // current button state
+int menuSelection = 1;
+int TM_Selection = 0;                          // stores the value of the current menu item selected for the Top level Menu
+int SM_Selection = 0;                          // stores the value of the current menu item selected for the Settings Menu
+int MM_Selection = 1;                          // stores which is selected, Temp Setpoint (0) or Fan Speed (1)
+int MM_Last_Selection = 1;                      // stores the value of the last menu item selected for the Manual Menu
+>>>>>>> devel
+
+int FanSpeed =     20;                         // Current fan speed
+int NewFanSpeed = 0;
+
+// Soft reset code.............  DON'T TOUCH  ................
+#define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out after 15ms
 void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3"))); // needed to recover after calling the soft_reset
-
+// ...........................................................
 
 // *****************************************************************
 //         *************** SETUP *****************************
@@ -176,8 +213,13 @@ void setup() {
 
   // The data header (we have a bunch of data to track)
 <<<<<<< HEAD
+<<<<<<< HEAD
   Serial.print("Time (s)\buttonState\t topMenu\tbuttonTime\ttopMenuOption\tairTemp\ttargetTemp");
   /*
+=======
+  Serial.print("Time (s)\buttonState\t TM_Selection\tbuttonTime\tCurrentlyDisplayedItem\tairTemp\ttargetTemp");
+
+>>>>>>> devel
   // Now that we are mucking with stuff, we should track our variables
    Serial.print("\t\tKp = "); 
    Serial.print(Kp);
