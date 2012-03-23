@@ -2,6 +2,9 @@
 //   ********************* FUNCTIONS *****************************
 // *****************************************************************
 
+
+
+
 // **************************** INTERRUPT ************************
 // This is the Timer 1 CTC interrupt, it goes off once a second
 SIGNAL(TIMER1_COMPA_vect) { 
@@ -11,7 +14,6 @@ SIGNAL(TIMER1_COMPA_vect) {
     seconds_time++;
     lastMenu = TM_Selection;
   }
-
 
   // save the last reading for our slope calculation
   previous_temperature = airTemp;
@@ -48,9 +50,13 @@ SIGNAL(TIMER1_COMPA_vect) {
   Serial.print("\t");
   Serial.println(relay_state);
 } 
+// **************************************************************************
 
 
-// *************** Top Menu Select *****************
+
+
+
+// ************************** CheckForSelection *****************************
 void CheckForSelection( int* MenuLevelSelection, int MenuItem ){ 
 // CheckForSelection( int *MenuLevelSelection, MenuItemNumber );
 // must pass the address of the variable that stores the last selected menu item for that menu level
@@ -63,10 +69,13 @@ void CheckForSelection( int* MenuLevelSelection, int MenuItem ){
     Enc.write(lastEnc);
   }
 }
+// **************************************************************************
 
 
 
-void lcd_display_once( String DisplayText ){// ********* LCD DISPLAY ONCE ************
+
+// ************************** lcd_display_once ******************************
+void lcd_display_once( String DisplayText ){
   if (CurrentlyDisplayedItem != LastDisplayedItem) {
     lcd.clear();
     lcd.setCursor(0,0);
@@ -74,9 +83,12 @@ void lcd_display_once( String DisplayText ){// ********* LCD DISPLAY ONCE ******
     LastDisplayedItem = CurrentlyDisplayedItem;
   }
 }
+// **************************************************************************
 
 
-// **************************** CHECK BUTTON STATE ************************
+
+
+// **************************** CHECK BUTTON STATE **************************
 void check_button_state(){
   // check if the button is pressed
   buttonState = digitalRead(BUTTON);
@@ -92,12 +104,18 @@ void check_button_state(){
   }
   lastButtonState = buttonState;
   if ( (buttonState == LOW) && (millis() - buttonTime >= RESET_TIME) ) {
-    soft_reset(); // reset if encoder button is pressed for 5 seconds
+    TM_Selection = 0; // goto the Top Menu if encoder button is pressed for 5 seconds
+    buttonState = HIGH;
+    //    soft_reset(); // reset if encoder button is pressed for 5 seconds
   }
 }
+// **************************************************************************
 
 
-// **************************** WDT_INT (RESET) ************************
+
+
+
+// **************************** WDT_INT (RESET) *****************************
 void wdt_init(void) // to disable the watchdog timer after a soft reset
 {
   MCUSR = 0;
@@ -105,11 +123,22 @@ void wdt_init(void) // to disable the watchdog timer after a soft reset
 
   return;
 }
+// **************************************************************************
 
-// ***************************** DisplayTemp ****************************
+
+
+
+// ******************************* DisplayTemp ******************************
 void DisplayTemp(){
   //Display temperature setpoint
   lcd.setCursor(11,0);
+  if (target_temperature < 100) { //keep digits right justified
+    lcd.print(" "); //clean any ghost digits
+    if (target_temperature < 10) {
+      lcd.print(" "); //clean any remaining ghost digits
+    }
+  }
+  
   lcd.print(target_temperature);
   #if ARDUINO >= 100
   lcd.write(0xDF); // print the degree symbol
@@ -132,16 +161,19 @@ void DisplayTemp(){
 #endif
   lcd.print("C ");
 }
+// **************************************************************************
 
 
-// ***************************** DisplayTime ****************************
+
+
+// ******************************* DisplayTime ******************************
 void DisplayTime() {
   int minutes = (seconds_time / 60);
   int seconds = (seconds_time % 60);
   lcd.setCursor(0, 0);
-  lcd.print("T:");
+//  lcd.print("T:");
   if ( minutes <= 9) { // add a leading space to the minute clock if less than 10 seconds
-    lcd.print(" ");
+    lcd.print("0");
   }    
   lcd.print( minutes ); // minutes
   lcd.print(":");
@@ -150,4 +182,23 @@ void DisplayTime() {
   }
   lcd.print( seconds ); // seconds
 }
+// **************************************************************************
+
+
+// ***************************** DisplayFanSpeed ****************************
+void DisplayFanSpeed(){
+  Serial.println( FanSpeed );
+  lcd.setCursor(8,1);
+  lcd.print("Fan:");
+  if ( FanSpeed < 100 ) { // right justify fan speed
+    lcd.print( " " );
+    if ( FanSpeed < 10) {
+      lcd.print( " " );
+    }
+  }
+  lcd.print( FanSpeed );
+  lcd.print("%");
+}
+// **************************************************************************
+
 

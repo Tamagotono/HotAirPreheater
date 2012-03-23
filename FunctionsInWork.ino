@@ -59,36 +59,71 @@ void mode_select(){//*****************************  MENU  **********************
 
   }
 }
+// **************************************************************************
 
-
-void manual_mode() {//******************************  MANUAL MODE  ******************************
-  if (TM_Selection != lastMenu) {
-    Enc.write(DEFAULT_TEMP);
+//******************************  MANUAL MODE  ******************************
+void manual_mode() {
+  if ( TM_Selection != lastMenu ) {
+    Enc.write( target_temperature );
   }
-  check_button_state();
+  //  check_button_state();
+  CheckForSelection( &MM_Selection, ( MM_Selection * -1 ) );
+  //  CheckForSelection( &MM_Selection, 0 );
+  Serial.println( MM_Selection );
   DisplayTime();
   DisplayTemp();
   DisplayFanSpeed();
-
-  newTarget = Enc.read();
-  if (newTarget != target_temperature) {
-    cli();
-    if (newTarget > MAX_TEMP) {
-      newTarget = 1;
-      Enc.write(newTarget);
+  if ( MM_Selection == 1 ){
+    if ( MM_Last_Selection == 0 ){ // if switching to temp set, set the encoder value to current temp setting
+      Enc.write( target_temperature );
+      MM_Last_Selection = MM_Selection;
     }
-    if (newTarget <= 0) {
-      newTarget = MAX_TEMP;
-      Enc.write(newTarget);
+//    Serial.println(MM_Selection);
+    newTarget = Enc.read();
+    if ( newTarget != target_temperature ) {
+      cli();
+      if ( newTarget > MAX_TEMP ) {
+        newTarget = 1;
+        Enc.write( newTarget );
+      }
+      if ( newTarget < 0 ) {
+        newTarget = MAX_TEMP;
+        Enc.write( newTarget );
+      }
+      target_temperature = newTarget;
+      DisplayTemp();
+      sei();
     }
-    target_temperature = newTarget;
-    DisplayTemp();
-    sei();
+  }
+  else {
+//    Serial.println(MM_Selection);
+    if ( MM_Last_Selection == 1 ){ //if switching to fan speed, set the encoder value to the current set speed
+      Enc.write( FanSpeed );
+      MM_Last_Selection = MM_Selection;
+    }
+    NewFanSpeed = Enc.read();
+    if ( NewFanSpeed != FanSpeed ) {
+      cli();
+      if ( NewFanSpeed > MAX_FAN_SPEED ) {
+        NewFanSpeed = MAX_FAN_SPEED;
+      }
+      if ( NewFanSpeed <= MIN_FAN_SPEED ) {
+        NewFanSpeed = MIN_FAN_SPEED;
+      }
+      Enc.write( NewFanSpeed );
+      FanSpeed = NewFanSpeed;
+      DisplayFanSpeed();
+      sei();
+    }
   }
 }
+// **************************************************************************
 
 
-void program_mode() {//*****************************  PROGRAM MODE  ******************************
+
+
+//*****************************  PROGRAM MODE  ******************************
+void program_mode() {
   if (TM_Selection != lastMenu) {
     lastMenu = TM_Selection;        
     lcd.clear();
@@ -101,8 +136,13 @@ void program_mode() {//*****************************  PROGRAM MODE  ************
   delay(750);
   //insert code here!
 }
+// **************************************************************************
 
-void remote_mode() {//******************************  REMOTE MODE  ******************************
+
+
+
+//******************************  REMOTE MODE  ******************************
+void remote_mode() {
   if (TM_Selection != lastMenu) {
     lastMenu = TM_Selection;
     lcd.clear();
@@ -115,8 +155,13 @@ void remote_mode() {//******************************  REMOTE MODE  *************
   delay(750);
   //insert code here!
 }
+// **************************************************************************
 
-void settings_mode() {//*****************************  SETTINGS MODE  *****************************
+
+
+
+//*****************************  SETTINGS MODE  *****************************
+void settings_mode() {
   if (TM_Selection != lastMenu) {
     lastMenu = TM_Selection;
     lcd.clear();
@@ -125,12 +170,9 @@ void settings_mode() {//*****************************  SETTINGS MODE  **********
   }
   lcd.display();
 }
+// **************************************************************************
 
 
-void DisplayFanSpeed(){
-  lcd.setCursor(8,1);
-  lcd.print("Fan: ");
-  lcd.print( FanSpeed );
-  lcd.print("%");
-}
+
+
 

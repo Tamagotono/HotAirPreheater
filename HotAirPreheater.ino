@@ -68,12 +68,6 @@ Hot Air Preheater
 
 LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 
-#define UPPERLEFT 0,0
-#define BOTTOMLEFT 0,1
-#define UPPERRIGHT 8,0
-#define BOTTOMRIGHT 8,1
-
-
 Encoder Enc(19,2);
 #define BUTTON 18
 
@@ -85,6 +79,8 @@ MAX6675 airTC(SPI_CLK, AIR_CS, SPI_DATA);    //temp directly out of the heatgun
 MAX6675 chipTC(SPI_CLK, CHIP_CS, SPI_DATA);  //temp measured at the chip/board
 
 
+#define MAX_FAN_SPEED 100
+#define MIN_FAN_SPEED 0
 
 
 // volatile means it is going to be messed with inside an interrupt 
@@ -112,14 +108,18 @@ long buttonTime =   0;              // how long the encoder button has been pres
 int lastButtonState =         LOW;            // if the button is pressed or not
 int buttonState =             HIGH;           // current button state
 int menuSelection = 1;
-int TM_Selection = 0;                          // stores the value of the last menu item selected for the Top level Menu
-int SM_Selection = 0;                          // stores the value of the last menu item selected for the Settings Menu
+int TM_Selection = 0;                          // stores the value of the current menu item selected for the Top level Menu
+int SM_Selection = 0;                          // stores the value of the current menu item selected for the Settings Menu
+int MM_Selection = 1;                          // stores which is selected, Temp Setpoint (0) or Fan Speed (1)
+int MM_Last_Selection = 1;                      // stores the value of the last menu item selected for the Manual Menu
 
-int FanSpeed =     20;                         // Default fan speed
+int FanSpeed =     20;                         // Current fan speed
+int NewFanSpeed = 0;
+
 // Soft reset code.............  DON'T TOUCH  ................
-#define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out
+#define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out after 15ms
 void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3"))); // needed to recover after calling the soft_reset
-
+// ...........................................................
 
 // *****************************************************************
 //         *************** SETUP *****************************
