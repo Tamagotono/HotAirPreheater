@@ -50,3 +50,14 @@ void settings_mode() {
   lcd.display();
 }
 // **************************************************************************
+
+
+
+// ***************** SET/RESTORE INITIAL EEPROM VALUES **********************
+void Restore_EEPROM_Defaults() {
+  EEPROM.write(PROFILE1_STARTINGTEMP_ADDRESS, 25);
+  EEPROM.write(PROFILE1_TSMIN_TIME_ADDRESS,30);
+
+
+}
+
