@@ -18,6 +18,9 @@ Hot Air Preheater
  The RESET function was taken directly from the following website:
  http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1222941939/12
  
+ The EEPROMWriteAnything.h code was found on the arduino playground:
+ http://arduino.cc/playground/Code/EEPROMWriteAnything
+ 
  The rest are standard Arduino 1.0 libraries.
  -----------------------------------------------------------------------------
  **** HARDWARE ****
@@ -33,6 +36,31 @@ Hot Air Preheater
 #include <Wire.h>
 #include <Encoder.h>
 #include <avr/wdt.h>                         //watchdog timer needed for the RESET function
+#include <EEPROM.h>                          // used to store settings to the EEPROM
+#include "EEPROMAnything.h"
+// Defines for EEPROM memory locations
+// two bytes are needed to store an int, so h = high byte and l = low byte
+// to read it as following (high byte * 256 + low byte)
+// to write it high byte = ( int / 256 ) and low byte = ( int % 256 )
+#define PROFILE1_STARTINGTEMP_ADDRESS_h  0
+#define PROFILE1_STARTINGTEMP_ADDRESS_l  1
+#define PROFILE1_TSMIN_TIME_ADDRESS_h    2
+#define PROFILE1_TSMIN_TIME_ADDRESS_l    3
+#define PROFILE1_TSMIN_TEMP_ADDRESS_h    4
+#define PROFILE1_TSMIN_TEMP_ADDRESS_l    5
+#define PROFILE1_TSMAS_TIME_ADDRESS_h    6
+#define PROFILE1_TSMAS_TIME_ADDRESS_l    7
+#define PROFILE1_TSMAX_TEMP_ADDRESS_h    8
+#define PROFILE1_TSMAX_TEMP_ADDRESS_l    9
+#define PROFILE1_TL_ADDRESS_h            10
+#define PROFILE1_TL_ADDRESS_l            11
+#define PROFILE1_TPSTART_ADDRESS_h       12
+#define PROFILE1_TPSTART_ADDRESS_l       13
+#define PROFILE1_TPEND_ADDRESS_h         14
+#define PROFILE1_TPEND_ADDRESS_l         15
+#define PROFILE1_RDRATE_ADDRESS_h        16
+#define PROFILE1_RDRATE_ADDRESS_l        17
+// End EEPROM defines
 
 #define BUTTON_PRESS_TIME 150
 #define BACK_MENU 2000
@@ -99,6 +127,9 @@ int newTarget = 0;
 // we need this to be a global variable because we add error each second
 float Summation;                            // The integral of error since time = 0
 
+
+
+// **************  My Variables  ****************
 int relay_state;                            // whether the relay pin is high (on) or low (off)
 int lastMenu = 1;
 int CurrentlyDisplayedItem = 0;
@@ -116,6 +147,21 @@ int MM_Last_Selection = 1;                      // stores the value of the last 
 
 int FanSpeed =     20;                         // Current fan speed
 int NewFanSpeed = 0;
+
+
+// ######## variables for program mode ########
+int StartingTemp; // Temperature the profile begins at, typically 25C
+int TSmin_Time;   // Time from StartingTemp to TSmin which is when the flux is activated (PREHEAT 1)
+int TSmin_Temp;   // Temperature the the flux is activated at
+int TSmax_Time;   // Duration of the Soak step
+int TSmax_Temp;   // Ending temperature of the Soak step
+int TL;           // Temperature at which the solder melts
+int TP_Temp;      // Peak temperature for the profile
+int TP_Time;      // Peak Soak duration (REFLOW)
+int RD_Rate;      // Ramp Down Rate, expressed in degrees C/sec. (COOLING)
+
+
+//***********************************************
 
 // Soft reset code.............  DON'T TOUCH  ................
 #define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out after 15ms
