@@ -64,7 +64,7 @@ Hot Air Preheater
 
 #define BUTTON_PRESS_TIME 150
 #define BACK_MENU 2000
-#define RESET_TIME 4000
+#define RESET_TIME 5000
 
 #define SSRPIN    13                         // The pin we use to control the SSR
 

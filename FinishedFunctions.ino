@@ -101,15 +101,16 @@ void check_button_state(){
       //      Serial.println("Released");
     }  
   }
-  /*
+  
   lastButtonState = buttonState;
    if ( (buttonState == LOW) && (millis() - buttonTime >= BACK_MENU) ) {
    TM_Selection = 0; // goto the Top Menu if encoder button is pressed for 5 seconds
    }
-   */
-  if ( (buttonState == LOW) && (millis() - buttonTime >= RESET_TIME) ) {
+  
+  if (( buttonState == LOW ) && (( millis() - buttonTime ) >= RESET_TIME ) ) {
     soft_reset(); // reset if encoder button is pressed for 5 seconds
   }
+  
 }
 // **************************************************************************
 
