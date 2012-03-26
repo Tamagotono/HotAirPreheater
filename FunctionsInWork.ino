@@ -50,3 +50,28 @@ void settings_mode() {
   lcd.display();
 }
 // **************************************************************************
+
+
+
+// ***************** SET/RESTORE INITIAL EEPROM VALUES **********************
+void Restore_EEPROM_Defaults() { 
+  EEPROM.write(PROFILE1_STARTINGTEMP_ADDRESS_h, 0);
+  EEPROM.write(PROFILE1_STARTINGTEMP_ADDRESS_l, 25);
+  EEPROM.write(PROFILE1_TSMIN_TIME_ADDRESS_h,   0);
+  EEPROM.write(PROFILE1_TSMIN_TIME_ADDRESS_l,   120);
+  EEPROM.write(PROFILE1_TSMIN_TEMP_ADDRESS_h,   0);
+  EEPROM.write(PROFILE1_TSMIN_TEMP_ADDRESS_l,   140);
+  EEPROM.write(PROFILE1_TSMAS_TIME_ADDRESS_h,   0);
+  EEPROM.write(PROFILE1_TSMAS_TIME_ADDRESS_l,   120);
+  EEPROM.write(PROFILE1_TSMAX_TEMP_ADDRESS_h,   0);
+  EEPROM.write(PROFILE1_TSMAX_TEMP_ADDRESS_l,   180);
+  EEPROM.write(PROFILE1_TL_ADDRESS_h,           0);
+  EEPROM.write(PROFILE1_TL_ADDRESS_l,           183);
+  EEPROM.write(PROFILE1_TPSTART_ADDRESS_h,      0);
+  EEPROM.write(PROFILE1_TPSTART_ADDRESS_l,      30);
+  EEPROM.write(PROFILE1_TPEND_ADDRESS_h,        0);
+  EEPROM.write(PROFILE1_TPEND_ADDRESS_l,        30);
+  EEPROM.write(PROFILE1_RDRATE_ADDRESS_h,       0);
+  EEPROM.write(PROFILE1_RDRATE_ADDRESS_l,       30);
+}
+

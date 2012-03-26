@@ -1,60 +1,74 @@
-<<<<<<< HEAD
-/********************************************************************************************************
- *                                                                                                       *
- *                                        Hot Air Preheater                                              *
- *                                                                                                       *
- *********************************************************************************************************
- *                                                                                                       *
- * ****************************************** SOFTWARE ************************************************* *
- *  Software is based off of the "Reflowduino" sketch found on adafruit's github                         *
- *  https://github.com/adafruit/Reflowduino written by PaintYourDragon.                                  *
- *                                                                                                       *
- *  Some portions were also taken from Scott Dixon's hotplate sketch                                     *
- *  http://dorkbotpdx.org/blog/scott_d/temperature_controller_board_final_design                         *
- *                                                                                                       *
- *  The Encoder library is written by Paul Stoffregen <paul@pjrc.com>                                    *
- *  http://www.pjrc.com/teensy/td_libs_Encoder.html                                                      *
- *  I chose this library because it allows use of 0,1 or 2 interupt pins for maximum flexability         *
- *                                                                                                       *
- *  The MAX6675 library is also taken from adafruit's github                                             *
- *  https://github.com/adafruit/MAX6675-library                                                          *
- *                                                                                                       *
- *  The RESET function was taken directly from the following website:                                    *
- *  http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1222941939/12                                        *
- *                                                                                                       *
- *  The rest are standard Arduino 1.0 libraries.                                                         *
- * ***************************************************************************************************** *
- *                                       **** HARDWARE ****                                              *
- * ***************************************************************************************************** *
- *  Rev 0.01                                                                                             *
- *  The hardware is currently a kludge of Scott Dixon's hotplate PCB with a second MAX6675 chip          *
- *  stacked on top of the original, with pins 3 & 6 bent out and wired separately.  Pin 3 is             *
- *  the input for the second TC and Pin 6 is the CS and wired to DP4 (originally used for IR             *
- *  thermometer).                                                                                        *
- *********************************************************************************************************/
-
+/*
+Hot Air Preheater
+ 
+ **** SOFTWARE ****
+ Software is based off of the "Reflowduino" sketch found on adafruit's github 
+ https://github.com/adafruit/Reflowduino written by PaintYourDragon.
+ 
+ Some portions were also taken from Scott Dixon's hotplate sketch 
+ http://dorkbotpdx.org/blog/scott_d/temperature_controller_board_final_design
+ 
+ The Encoder library is written by Paul Stoffregen <paul@pjrc.com>
+ http://www.pjrc.com/teensy/td_libs_Encoder.html
+ I chose this library because it allows use of 0,1 or 2 interupt pins for maximum flexability
+ 
+ The MAX6675 library is also taken from adafruit's github
+ https://github.com/adafruit/MAX6675-library
+ 
+ The RESET function was taken directly from the following website:
+ http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1222941939/12
+ 
+ The EEPROMWriteAnything.h code was found on the arduino playground:
+ http://arduino.cc/playground/Code/EEPROMWriteAnything
+ 
+ The rest are standard Arduino 1.0 libraries.
+ -----------------------------------------------------------------------------
+ **** HARDWARE ****
+ Rev 0.01
+ The hardware is currently a kludge of Scott Dixon's hotplate PCB with a second MAX6675 chip
+ stacked on top of the original, with pins 3 & 6 bent out and wired separately.  Pin 3 is
+ the input for the second TC and Pin 6 is the CS and wired to DP4 (originally used for IR 
+ thermometer).
+ 
+ */
 #include <LiquidCrystal.h>
 #include <max6675.h>
 #include <Wire.h>
 #include <Encoder.h>
-<<<<<<< HEAD
-<<<<<<< HEAD
-#include <EEPROM.h>
-#include <avr/wdt.h>           //watchdog timer needed for the RESET function
-=======
 #include <avr/wdt.h>                         //watchdog timer needed for the RESET function
+#include <EEPROM.h>                          // used to store settings to the EEPROM
+#include "EEPROMAnything.h"
+// Defines for EEPROM memory locations
+// two bytes are needed to store an int, so h = high byte and l = low byte
+// to read it as following (high byte * 256 + low byte)
+// to write it high byte = ( int / 256 ) and low byte = ( int % 256 )
+#define PROFILE1_STARTINGTEMP_ADDRESS_h  0
+#define PROFILE1_STARTINGTEMP_ADDRESS_l  1
+#define PROFILE1_TSMIN_TIME_ADDRESS_h    2
+#define PROFILE1_TSMIN_TIME_ADDRESS_l    3
+#define PROFILE1_TSMIN_TEMP_ADDRESS_h    4
+#define PROFILE1_TSMIN_TEMP_ADDRESS_l    5
+#define PROFILE1_TSMAS_TIME_ADDRESS_h    6
+#define PROFILE1_TSMAS_TIME_ADDRESS_l    7
+#define PROFILE1_TSMAX_TEMP_ADDRESS_h    8
+#define PROFILE1_TSMAX_TEMP_ADDRESS_l    9
+#define PROFILE1_TL_ADDRESS_h            10
+#define PROFILE1_TL_ADDRESS_l            11
+#define PROFILE1_TPSTART_ADDRESS_h       12
+#define PROFILE1_TPSTART_ADDRESS_l       13
+#define PROFILE1_TPEND_ADDRESS_h         14
+#define PROFILE1_TPEND_ADDRESS_l         15
+#define PROFILE1_RDRATE_ADDRESS_h        16
+#define PROFILE1_RDRATE_ADDRESS_l        17
+// End EEPROM defines
 
 #define BUTTON_PRESS_TIME 150
 #define BACK_MENU 2000
-#define RESET_TIME 4000
->>>>>>> devel
+#define RESET_TIME 5000
 
-#define BUTTON 18              // Encoder's push button is on Digital Pin 18
-#define BUTTON_PRESS_DETECT_TIME 150  // Have to press the button for a minimum of 150mS for it to detect it as pressed
-#define RESET_TIME 2000        // If the button is pressed for 5seconds, it will trigger a reset
+#define SSRPIN    13                         // The pin we use to control the SSR
 
-#define SSRPIN 13              // The pin we use to control the SSR
-#define FANPIN 3               // The pin we use to control the fan speed
+#define FANPIN    3                          // The pin we use to control the fan speed
 
 // The SPI pins we use for the TC sensors
 #define SPI_CLK   17
@@ -83,36 +97,6 @@
 
 LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
 
-<<<<<<< HEAD
-#define UPPERLEFT 0,0
-#define BOTTOMLEFT 0,1
-#define UPPERRIGHT 8,0
-#define BOTTOMRIGHT 8,1
-
-
-<<<<<<< HEAD
-// defines for menu options
-#define Top             0
-#define Settings        1
-#define Fan             2
-#define Temp            3
-#define TempDefault     30
-#define TempMax         31
-#define Program         4
-#define ProgramProfile  40
-#define SerialSpeed     5
-#define MAX_FAN_SPEED   75
-#define ManualMenu      6
-#define ProfileMenu     400
-
-
-// defines for EEPROM storage
-#define TEMP_DEF_ADDRESS 0
-#define TEMP_MAX_ADDRESS 1
-
-LiquidCrystal lcd(RS, RW, E, D4, D5, D6, D7);
-=======
->>>>>>> devel
 Encoder Enc(19,2);
 #define BUTTON 18
 
@@ -135,52 +119,19 @@ volatile float airTemp;                     // in celsius
 volatile float chipTemp;                    // in celsius
 volatile float previous_temperature;        // the last reading (1 second ago)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-int target_temperature;                // the target temperature for the air
-unsigned int set_temperature;          // the target temperature for the chip/board
-int newTargetTemp = 0;
-=======
 int target_temperature;                     // the target temperature for the air
 int   set_temperature = 20;             // the target temperature for the chip/board
 int newTarget = 0;
 
->>>>>>> devel
 
 // we need this to be a global variable because we add error each second
 float Summation;                            // The integral of error since time = 0
 
+
+
+// **************  My Variables  ****************
 int relay_state;                            // whether the relay pin is high (on) or low (off)
 int lastMenu = 1;
-<<<<<<< HEAD
-<<<<<<< HEAD
-int topMenuOption = 0;
-int lastTopMenuOption = 1;
-int TM_Enc = 0;        // Top Menu      Encoder count storage
-int MM_ENC = 0;        // Manual Mode   Encoder count storage
-int PM_Enc = 0;        // Program Mode  Encoder count storage
-int RM_Enc = 0;        // Remote Mode   Encoder count storage
-int SM_Enc = 0;        // Settings Mode Encoder count storage
-int SettingsMenu = 0;
-int Settings_FanMenu = 0;
-int Settings_TempMenu = 0;
-int Temp_Default = 0;
-int ProgramMenu = 0;
-;
-long Program_ProfileMenu = 10;
-int SerialSpeedMenu = 0;
-int SerialSpeed_BaudRate = 9600;
-
-int newTargetFanSpeed = 0;;
-int TargetFanSpeed = 0;
-int FanSpeed = 0;
-
-
-volatile  long buttonTime = 0;         // how long the encoder button has been pressed
-int  lastButtonState = LOW;  // if the button is pressed or not
-int  buttonState = HIGH;     // current button state
-//int  menuSelection = 1;
-=======
 int CurrentlyDisplayedItem = 0;
 int LastDisplayedItem = 1;
 int lastEnc = 0;
@@ -193,10 +144,24 @@ int TM_Selection = 0;                          // stores the value of the curren
 int SM_Selection = 0;                          // stores the value of the current menu item selected for the Settings Menu
 int MM_Selection = 1;                          // stores which is selected, Temp Setpoint (0) or Fan Speed (1)
 int MM_Last_Selection = 1;                      // stores the value of the last menu item selected for the Manual Menu
->>>>>>> devel
 
 int FanSpeed =     20;                         // Current fan speed
 int NewFanSpeed = 0;
+
+
+// ######## variables for program mode ########
+int StartingTemp; // Temperature the profile begins at, typically 25C
+int TSmin_Time;   // Time from StartingTemp to TSmin which is when the flux is activated (PREHEAT 1)
+int TSmin_Temp;   // Temperature the the flux is activated at
+int TSmax_Time;   // Duration of the Soak step
+int TSmax_Temp;   // Ending temperature of the Soak step
+int TL;           // Temperature at which the solder melts
+int TP_Temp;      // Peak temperature for the profile
+int TP_Time;      // Peak Soak duration (REFLOW)
+int RD_Rate;      // Ramp Down Rate, expressed in degrees C/sec. (COOLING)
+
+
+//***********************************************
 
 // Soft reset code.............  DON'T TOUCH  ................
 #define soft_reset() do { wdt_enable(WDTO_15MS);  for(;;){} } while(0)  // code to enable the soft reset by calling the watchdog timer then having it time-out after 15ms
@@ -208,26 +173,19 @@ void wdt_init(void) __attribute__((naked)) __attribute__((section(".init3"))); /
 // *****************************************************************
 
 void setup() {  
-  Serial.begin(SerialSpeed_BaudRate); 
+  Serial.begin(9600); 
   Serial.println("HotAir Preheater");
 
   // The data header (we have a bunch of data to track)
-<<<<<<< HEAD
-<<<<<<< HEAD
-  Serial.print("Time (s)\buttonState\t topMenu\tbuttonTime\ttopMenuOption\tairTemp\ttargetTemp");
-  /*
-=======
   Serial.print("Time (s)\buttonState\t TM_Selection\tbuttonTime\tCurrentlyDisplayedItem\tairTemp\ttargetTemp");
 
->>>>>>> devel
   // Now that we are mucking with stuff, we should track our variables
-   Serial.print("\t\tKp = "); 
-   Serial.print(Kp);
-   Serial.print(" Ki = "); 
-   Serial.print(Ki);
-   Serial.print(" Kd = "); 
-   Serial.println(Kd);
-   */
+  Serial.print("\t\tKp = "); 
+  Serial.print(Kp);
+  Serial.print(" Ki = "); 
+  Serial.print(Ki);
+  Serial.print(" Kd = "); 
+  Serial.println(Kd);
 
   // the relay pin controls the heater
   pinMode(SSRPIN, OUTPUT);
@@ -257,11 +215,11 @@ void setup() {
   target_temperature = DEFAULT_TEMP;  // degrees C default starting temp
   Enc.write(target_temperature); //set the encoder default value
 
-<<<<<<< HEAD
-    Summation = 0;                      // set the integral to 0
+    // set the integral to 0
+  Summation = 0;
 
-    // Setup 1 Hz timer to refresh display using 16 Timer 1
-  TCCR1A = 0;                                     // CTC mode (interrupt after timer reaches OCR1A)
+  // Setup 1 Hz timer to refresh display using 16 Timer 1
+  TCCR1A = 0;                           // CTC mode (interrupt after timer reaches OCR1A)
   TCCR1B = _BV(WGM12) | _BV(CS10) | _BV(CS12);    // CTC & clock div 1024
   OCR1A  = 15609;                                 // 16mhz / 1024 / 15609 = 1 Hz
   TIMSK1 = _BV(OCIE1A);                          // turn on interrupt
@@ -297,375 +255,8 @@ void loop() {
   }
 
   check_button_state();
-<<<<<<< HEAD
-  top_menu();
+  mode_select();
 }
-
-// *****************************************************************
-//   ********************* FUNCTIONS *****************************
-// *****************************************************************
-
-// **************************** INTERRUPT ************************
-// This is the Timer 1 CTC interrupt, it goes off once a second
-SIGNAL(TIMER1_COMPA_vect) { 
-
-  // time moves forward!
-  if (topMenu == lastMenu) {
-    seconds_time++;
-    lastMenu = topMenu;
-  }
-
-  // save the last reading for our slope calculation
-  previous_temperature = airTemp;
-
-  // we will want to know the temperatures in the main loop()
-  // instead of constantly reading them, we'll just use this interrupt
-  // to track them and save them once a second to 'airTemp' and 'chipTemp'
-  airTemp = airTC.readCelsius();
-  chipTemp = chipTC.readCelsius();
-
-  // Sum the error over time
-  Summation += target_temperature - airTemp;
-
-  if ( (airTemp < (target_temperature * (1.0 - WINDUPPERCENT))) ||
-    (airTemp > (target_temperature * (1.0 + WINDUPPERCENT))) ) {
-    // to avoid windup, we only integrate within 5%
-    Summation = 0;
-  }
-  // print out a log so we can see whats up
-  Serial.print(seconds_time);
-  Serial.print("\t");
-  Serial.print(buttonState);
-  Serial.print("\t");
-  Serial.print(topMenu);
-  Serial.print("\t");
-  Serial.print(buttonTime);
-  Serial.print("\t");
-  Serial.print(topMenuOption);
-  Serial.print("\t");
-  //  Serial.print();
-  Serial.print(airTemp);
-  Serial.print("\t");
-  Serial.print(target_temperature);
-  Serial.print("\t");
-  Serial.println(relay_state);
-} 
-
-
-// **************************** CHECK BUTTON STATE ************************
-void check_button_state(){
-  buttonState = digitalRead(BUTTON);
-  if ( lastButtonState != buttonState ) {
-    if (buttonState == LOW) {
-      //    Serial.println("Pressed");
-      lastButtonState = LOW;
-      buttonTime = millis();
-    }
-    else {
-      //      Serial.println("Released");
-    }  
-  }
-  lastButtonState = buttonState;
-
-  if ( (buttonState == LOW) && (millis() - buttonTime >= RESET_TIME) ) {
-    soft_reset(); // reset if encoder button is pressed for 5 seconds
-  }
-}
-
-
-// ***************************** TOP MENU ****************************
-void top_menu(){
-  if (topMenuOption != lastTopMenuOption) {
-    TM_Enc = Enc.read();
-    Enc.write(topMenuOption);
-  }
-  check_button_state();
-  switch (topMenu) {
-  case 0: //------------------------------------------------DISPLAY THE LIST OF AVAILABLE MODES
-    topMenuOption = ((Enc.read() / 4) % 4);
-    switch (topMenuOption) {
-    case 0://                       MANUAL MODE
-      lcd_menu_display_once( "Mode: MANUAL" );
-      menuSelection( Top, 1, TM_Enc );
-      break;
-
-    case 1://                       PROGRAM MODE
-      lcd_menu_display_once( "Mode: PROGRAM" );
-      menuSelection( Top, 2, PM_Enc );
-      break;
-
-    case 2://                       REMOTE MODE
-      lcd_menu_display_once( "Mode: REMOTE" );
-      menuSelection( Top, 3, RM_Enc );
-      break;
-    case 3://                       SETTINGS MODE
-      lcd_menu_display_once( "Mode: SETTINGS" );
-      menuSelection( Top, 4, SM_Enc );
-      break;
-    }
-    break;
-
-  case 1:  //******************************  MANUAL MODE  ******************************
-    MM_ENC = Enc.read();
-    manual_mode();
-    break;
-
-  case 2:  //*****************************  PROGRAM MODE  ******************************
-    PM_Enc = Enc.read();
-    program_mode();
-    break;
-
-  case 3:  //******************************  REMOTE MODE  ******************************
-    RM_Enc = Enc.read();
-    remote_mode();
-    break;
-
-  case 4:  //*****************************  SETTINGS MODE  *****************************
-    SM_Enc = Enc.read();
-    settings_mode();
-    break;
-
-  }
-}
-
-void menuSelection( int MenuLevel, int MenuNum, int EncVal ){ // **************** menu selection ******************
-  // MenuNum = number of the switch/case selection you are choosi
-  // EncVal  = Value you want to write to the encoder
-  if ( (buttonState == LOW) && ((millis() - buttonTime) > BUTTON_PRESS_DETECT_TIME) ) {
-    lcd.clear();
-    Enc.write(EncVal);
-    switch (MenuLevel) {
-    case Top:
-      topMenu = MenuNum;
-      break;
-
-    case Settings:
-      SettingsMenu = MenuNum;
-      break;
-
-    case Fan:
-      Settings_FanMenu = MenuNum;
-      break;
-
-    case Temp:
-      Settings_TempMenu = MenuNum;
-      break;
-
-    case TempDefault:
-      Temp_Default = EncVal;
-      EEPROM.write(TEMP_DEF_ADDRESS, EncVal);
-      break;
-
-    case TempMax:
-      Temp_Default = EncVal;
-      EEPROM.write(TEMP_MAX_ADDRESS, EncVal);
-      break;
-
-    case Program:
-      ProgramMenu = MenuNum;
-      break;
-
-    case ProfileMenu:
-       Program_ProfileMenu = MenuNum;
-       break;
-
-    case SerialSpeed:
-      SerialSpeedMenu = MenuNum;
-      break;
-
-    case 9600:
-      SerialSpeed_BaudRate = 9600;
-      break;
-
-    case 57600:
-      SerialSpeed_BaudRate = 57600;
-      break;
-
-    case 115200:
-      SerialSpeed_BaudRate = 115200;
-      break;
-
-    case ManualMenu:
-      if (MenuNum = 1) {
-        newTargetTemp = Enc.read();
-        if (newTargetTemp != target_temperature) {
-          cli(); //disable interrupts to prevent our target temp from being shown elsewhere on the screen
-          if (newTargetTemp > MAX_TEMP) {
-            newTargetTemp = 1;
-            Enc.write(newTargetTemp);
-          }
-          if (newTargetTemp <= 0) {
-            newTargetTemp = MAX_TEMP;
-            Enc.write(newTargetTemp);
-          }
-          target_temperature = newTargetTemp;
-          update_temp();
-          sei(); //reenable interrupts
-        }
-      }
-      else {
-        newTargetFanSpeed = Enc.read();
-        if (newTargetFanSpeed != TargetFanSpeed) {
-          cli(); //disable interrupts to prevent our target temp from being shown elsewhere on the screen
-          if (newTargetFanSpeed > MAX_FAN_SPEED) {
-            newTargetFanSpeed = 1;
-            Enc.write(newTargetFanSpeed);
-          }
-          if (newTargetFanSpeed <= 0) {
-            newTargetFanSpeed = MAX_FAN_SPEED;
-            Enc.write(newTargetFanSpeed);
-          }
-          TargetFanSpeed = newTargetFanSpeed;
-          update_fanspeed();
-          sei(); //reenable interrupts
-        }
-      }
-
-    }
-
-  }
-}
-
-void lcd_menu_display_once( String text ){ // ******************** lcd menu display once ************************
-  if (topMenuOption != lastTopMenuOption) {
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print( text );
-    lastTopMenuOption = topMenuOption;
-  }
-}
-
-
-void manual_mode() {//******************************  MANUAL MODE  ******************************
-  if (topMenu != lastMenu) {
-    Enc.write(DEFAULT_TEMP);
-  }
-  check_button_state();
-  update_time();
-  update_temp();
-
-  newTargetTemp = Enc.read();
-  if (newTargetTemp != target_temperature) {
-    cli(); //disable interrupts to prevent our target temp from being shown elsewhere on the screen
-    if (newTargetTemp > MAX_TEMP) {
-      newTargetTemp = 1;
-      Enc.write(newTargetTemp);
-    }
-    if (newTargetTemp <= 0) {
-      newTargetTemp = MAX_TEMP;
-      Enc.write(newTargetTemp);
-    }
-    target_temperature = newTargetTemp;
-    update_temp();
-    sei(); //reenable interrupts
-  }
-}
-
-void program_mode() {//*****************************  PROGRAM MODE  ******************************
-  if (topMenu != lastMenu) {
-    lastMenu = topMenu;        
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("PROGRAM mode placeholder");
-  }
-  lcd.display();
-  delay(750);
-  lcd.noDisplay();
-  delay(750);
-  //insert code here!
-}
-
-void remote_mode() {//******************************  REMOTE MODE  ******************************
-  if (topMenu != lastMenu) {
-    lastMenu = topMenu;
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("REMOTE mode     placeholder");
-  }
-  lcd.display();
-  delay(750);
-  lcd.noDisplay();
-  delay(750);
-  //insert code here!
-}
-
-void settings_mode() {//*****************************  SETTINGS MODE  *****************************
-  if (topMenu != lastMenu) {
-    lastMenu = topMenu;
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("SETTINGS mode   placeholder");
-  }
-  lcd.display();
-  delay(750);
-  lcd.noDisplay();
-  delay(750);
-  //insert code here!
-}
-
-
-// ***************************** update_time ****************************
-void update_time() {
-  int minutes = (seconds_time / 60);
-  int seconds = (seconds_time % 60);
-  lcd.setCursor(0, 0);
-  lcd.print("Time:");
-  if ( minutes <= 9) { // add a leading space to the minute clock if less than 10 seconds
-    lcd.print(" ");
-  }    
-  lcd.print( minutes ); // minutes
-  lcd.print(":");
-  if ( seconds <= 9) { // add a leading zero to the seconds clock if less than 10 seconds
-    lcd.print("0");
-  }
-  lcd.print( seconds ); // seconds
-  lcd.setCursor(13,0);
-  lcd.print(target_temperature);
-  lcd.print("  "); // get rid of any trailing digits 
-}
-
-
-// ***************************** update_temp ****************************
-void update_temp(){
-  // go to line #1
-  lcd.setCursor(0,1);
-  lcd.print(airTemp);
-  lcd.setCursor(8,1);
-  lcd.print(chipTemp);
-#if ARDUINO >= 100
-  lcd.write(0xDF); // print the degree symbol
-#else
-  lcd.print(0xDF, BYTE);
-#endif
-  lcd.print("C ");
-}
-
-
-// ***************************** update_fanspeed ****************************
-void update_fanspeed(){
-  // go to line #1
-  lcd.setCursor(0,1);
-  lcd.print(airTemp);
-  lcd.setCursor(8,1);
-  lcd.print(FanSpeed);
-  lcd.print("%");
-}
-
-
-// **************************** WDT_INT (RESET) ************************
-void wdt_init(void) // to disable the watchdog timer after a soft reset
-{
-  MCUSR = 0;
-  wdt_disable();
-
-  return;
-}
-
-
-
-
-
-
 
 
 
